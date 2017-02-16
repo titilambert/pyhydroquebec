@@ -90,6 +90,10 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not get profile page")
         # Update cookies
         self._cookies.update(raw_res.cookies)
+        # Search for the username inside the page
+        # to confirm the login
+        if raw_res.content.find(self.username.encode()):
+            return False
         # Looking for p_p_id
         soup = BeautifulSoup(raw_res.content, 'html.parser')
         p_p_id = None
@@ -160,6 +164,10 @@ class HydroQuebecClient(object):
         self._post_login_page(login_url)
         # Get p_p_id
         p_p_id = self._get_p_p_id()
+        if p_p_id is False:
+            raise PyHydroQuebecError("Can not login. Check your "
+                                     "username/password. Maybe HydroQuebec "
+                                     "web is in maintenance mode.")
         # Get Monthly data
         monthly_data = self._get_monthly_data(p_p_id)[0]
         # Get daily data

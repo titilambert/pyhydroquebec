@@ -49,9 +49,13 @@ def main():
                         default=REQUESTS_TIMEOUT, help='Request timeout')
     args = parser.parse_args()
     client = HydroQuebecClient(args.username, args.password, args.timeout)
-    client.fetch_data()
+    try:
+        client.fetch_data()
+    except BaseException as exp:
+        print(exp)
+        return 1
     if not client.get_data():
-        return
+        return 2
     if args.json:
         print(json.dumps(client.get_data()))
     else:
