@@ -12,6 +12,7 @@ REQUESTS_TIMEOUT = 15
 
 HOST = "https://www.hydroquebec.com"
 HOME_URL = "{}/portail/web/clientele/authentification".format(HOST)
+MAIN_URL = "{}/portail/fr/group/clientele/gerer-mon-compte".format(HOST)
 PROFILE_URL = ("{}/portail/fr/group/clientele/"
                "portrait-de-consommation".format(HOST))
 MONTHLY_MAP = (('period_total_bill', 'montantFacturePeriode'),
@@ -37,6 +38,7 @@ class HydroQuebecClient(object):
         """Initialize the client object."""
         self.username = username
         self.password = password
+        self._contracts = []
         self._data = {}
         self._cookies = None
         self._timeout = timeout
@@ -73,14 +75,16 @@ class HydroQuebecClient(object):
         except OSError:
             raise PyHydroQuebecError("Can not submit login form")
         if raw_res.status_code != 302:
-            raise PyHydroQuebecError("Bad HTTP status code")
+            raise PyHydroQuebecError("Login error: Bad HTTP status code. "
+                                     "Please check your username/password.")
 
         # Update cookies
         self._cookies.update(raw_res.cookies)
         return True
 
-    def _get_p_p_id(self):
+    def _get_p_p_id_and_contract(self):
         """Get id of consumption profile."""
+        contracts = {}
         from bs4 import BeautifulSoup
         try:
             raw_res = requests.get(PROFILE_URL,
@@ -90,12 +94,19 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not get profile page")
         # Update cookies
         self._cookies.update(raw_res.cookies)
-        # Search for the username inside the page
-        # to confirm the login
-        if raw_res.content.find(self.username.encode()):
-            return False
-        # Looking for p_p_id
+        # Parse html
         soup = BeautifulSoup(raw_res.content, 'html.parser')
+        # Search contracts
+        for node in soup.find_all('span', {"class": "contrat"}):
+            rematch = re.match("C[a-z]* ([0-9]{4} [0-9]{5})", node.text)
+            if rematch is not None:
+                contracts[rematch.group(1).replace(" ", "")] = None
+        # search for links
+        for node in soup.find_all('a', {"class": "big iconLink"}):
+            for contract in contracts.keys():
+                if contract in node.attrs.get('href'):
+                    contracts[contract] = node.attrs.get('href')
+        # Looking for p_p_id
         p_p_id = None
         for node in soup.find_all('span'):
             node_id = node.attrs.get('id', "")
@@ -106,7 +117,46 @@ class HydroQuebecClient(object):
         if p_p_id is None:
             raise PyHydroQuebecError("Could not get p_p_id")
 
-        return p_p_id
+        return p_p_id, contracts
+
+
+    def _get_lonely_contract(self):
+        """Get contract number when we have only one contract"""
+        contracts = {}
+        try:
+            raw_res = requests.get(MAIN_URL,
+                                   cookies=self._cookies,
+                                   timeout=REQUESTS_TIMEOUT)
+        except OSError:
+            raise PyHydroQuebecError("Can not get main page")
+        # Update cookies
+        self._cookies.update(raw_res.cookies)
+        # Parse html
+        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        info_node = soup.find("ul", {"class": "account-contract"})
+        research = re.search("Contrat ([0-9]{4} [0-9]{5})", info_node.text)
+        if research is not None:
+            contracts[research.group(1).replace(" ", "")] = None
+
+        if contracts == {}:
+            raise PyHydroQuebecError("Can Not found contract")
+
+        return contracts
+
+    def _load_contract_page(self, contract_url):
+        """Load the profile page of a specific contract when we have
+        multiple contracts
+        """
+        try:
+            raw_res = requests.get(contract_url,
+                                   cookies=self._cookies,
+                                   timeout=REQUESTS_TIMEOUT)
+        except OSError:
+            raise PyHydroQuebecError("Can not get profile page for a "
+                                     "specific contract")
+        # Update cookies
+        self._cookies.update(raw_res.cookies)
+ 
 
     def _get_monthly_data(self, p_p_id):
         """Get monthly data."""
@@ -114,6 +164,11 @@ class HydroQuebecClient(object):
                   "p_p_lifecycle": 2,
                   "p_p_resource_id": ("resourceObtenirDonnees"
                                       "PeriodesConsommation")}
+        raw_res = requests.get(PROFILE_URL,
+                                   params=params,
+                                   cookies=self._cookies,
+                                   timeout=REQUESTS_TIMEOUT)
+
         try:
             raw_res = requests.get(PROFILE_URL,
                                    params=params,
@@ -162,26 +217,41 @@ class HydroQuebecClient(object):
         login_url = self._get_login_page()
         # Post login page
         self._post_login_page(login_url)
-        # Get p_p_id
-        p_p_id = self._get_p_p_id()
-        if p_p_id is False:
-            raise PyHydroQuebecError("Can not login. Check your "
-                                     "username/password. Maybe HydroQuebec "
-                                     "web is in maintenance mode.")
-        # Get Monthly data
-        monthly_data = self._get_monthly_data(p_p_id)[0]
-        # Get daily data
-        start_date = monthly_data.get('dateDebutPeriode')
-        end_date = monthly_data.get('dateFinPeriode')
-        daily_data = self._get_daily_data(p_p_id, start_date, end_date)
-        daily_data = daily_data[0]['courant']
+        # Get p_p_id and contracts
+        p_p_id, contracts = self._get_p_p_id_and_contract()
+        # If we don't have any contrats that means we have only
+        # onecontract. Let's get it
+        if contracts == {}:
+            contracts = self._get_lonely_contract()
+        # For all contracts
+        for contract, contract_url in contracts.items():
+            if contract_url:
+                self._load_contract_page(contract_url)
 
-        # format data
-        for key1, key2 in MONTHLY_MAP:
-            self._data[key1] = monthly_data[key2]
-        for key1, key2 in DAILY_MAP:
-            self._data[key1] = daily_data[key2]
+            # Get Monthly data
+            monthly_data = self._get_monthly_data(p_p_id)[0]
+            # Get daily data
+            start_date = monthly_data.get('dateDebutPeriode')
+            end_date = monthly_data.get('dateFinPeriode')
+            daily_data = self._get_daily_data(p_p_id, start_date, end_date)
+            daily_data = daily_data[0]['courant']
 
-    def get_data(self):
+            # format data
+            contract_data = {}
+            for key1, key2 in MONTHLY_MAP:
+                contract_data[key1] = monthly_data[key2]
+            for key1, key2 in DAILY_MAP:
+                contract_data[key1] = daily_data[key2]
+            self._data[contract] = contract_data
+
+    def get_data(self, contract=None):
         """Return collected data"""
-        return self._data
+        if contract is None:
+            return self._data
+        elif contract in self._data.keys():
+            return {contract: self._data[contract]}
+        else:
+            raise PyHydroQuebecError("Contract {} not found".format(contract))
+
+    def get_contracts(self):
+        return set(self._data.keys())

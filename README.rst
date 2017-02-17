@@ -26,12 +26,20 @@ Print your current data
     pyhydroquebec -u MYACCOUNT -p MYPASSWORD
 
 
+List your current contracts
+
+::
+
+    pyhydroquebec -u MYACCOUNT -p MYPASSWORD -l
+
+
 Print help
 
 ::
 
     pyhydroquebec -h
-    usage: pyhydroquebec [-h] -u USERNAME -p PASSWORD [-j] [-t TIMEOUT]
+    usage: pyhydroquebec [-h] -u USERNAME -p PASSWORD [-j] [-c CONTRACT] [-l]
+                         [-t TIMEOUT]
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -40,6 +48,9 @@ Print help
       -p PASSWORD, --password PASSWORD
                             Password
       -j, --json            Json output
+      -c CONTRACT, --contract CONTRACT
+                            Contract number
+      -l, --list-contracts  List all your contracts
       -t TIMEOUT, --timeout TIMEOUT
                             Request timeout
 
