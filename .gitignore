@@ -1,4 +1,5 @@
 *.swp
+*.pyc
 env/
 __pycache__/
 pyhydroquebec.egg-info/
