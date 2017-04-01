@@ -32,6 +32,7 @@ Mean Daily Bill:    {d[period_mean_daily_bill]:.2f} $
 
 Total period consumption
 ========================
+Temperature:        {d[period_average_temperature]:d} °C
 Lower price:        {d[period_lower_price_consumption]:.2f} kWh
 Higher price:       {d[period_higher_price_consumption]:.2f} kWh
 Total:              {d[period_total_consumption]:.2f} kWh
@@ -39,6 +40,7 @@ Mean daily:         {d[period_mean_daily_consumption]:.2f} kWh
 
 Yesterday consumption
 =====================
+Temperature:        {d[yesterday_average_temperature]:d} °C
 Lower price:        {d[yesterday_lower_price_consumption]:.2f} kWh
 Higher price:       {d[yesterday_higher_price_consumption]:.2f} kWh
 Total:              {d[yesterday_total_consumption]:.2f} kWh

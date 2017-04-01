@@ -22,10 +22,12 @@ MONTHLY_MAP = (('period_total_bill', 'montantFacturePeriode'),
                ('period_mean_daily_consumption', 'moyenneKwhJourPeriode'),
                ('period_total_consumption', 'consoTotalPeriode'),
                ('period_lower_price_consumption', 'consoRegPeriode'),
-               ('period_higher_price_consumption', 'consoHautPeriode'))
+               ('period_higher_price_consumption', 'consoHautPeriode'),
+               ('period_average_temperature', 'tempMoyennePeriode'))
 DAILY_MAP = (('yesterday_total_consumption', 'consoTotalQuot'),
              ('yesterday_lower_price_consumption', 'consoRegQuot'),
-             ('yesterday_higher_price_consumption', 'consoHautQuot'))
+             ('yesterday_higher_price_consumption', 'consoHautQuot'),
+             ('yesterday_average_temperature', 'tempMoyenneQuot'))
 
 
 class PyHydroQuebecError(Exception):
