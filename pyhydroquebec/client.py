@@ -236,14 +236,20 @@ class HydroQuebecClient(object):
             start_date = monthly_data.get('dateDebutPeriode')
             end_date = monthly_data.get('dateFinPeriode')
             daily_data = self._get_daily_data(p_p_id, start_date, end_date)
-            daily_data = daily_data[0]['courant']
+            # We have to test daily_data because it's empty
+            # At the end/starts of a period
+            if len(daily_data) > 0:
+                daily_data = daily_data[0]['courant']
 
             # format data
             contract_data = {}
             for key1, key2 in MONTHLY_MAP:
                 contract_data[key1] = monthly_data[key2]
-            for key1, key2 in DAILY_MAP:
-                contract_data[key1] = daily_data[key2]
+            # We have to test daily_data because it's empty
+            # At the end/starts of a period
+            if len(daily_data) > 0:
+                for key1, key2 in DAILY_MAP:
+                    contract_data[key1] = daily_data[key2]
             self._data[contract] = contract_data
 
     def get_data(self, contract=None):
