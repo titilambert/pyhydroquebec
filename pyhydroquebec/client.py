@@ -121,7 +121,6 @@ class HydroQuebecClient(object):
 
         return p_p_id, contracts
 
-
     def _get_lonely_contract(self):
         """Get contract number when we have only one contract"""
         contracts = {}
@@ -145,6 +144,38 @@ class HydroQuebecClient(object):
 
         return contracts
 
+    def _get_balances(self):
+        """Get all balances
+
+        .. todo::
+
+            IT SEEMS balances are shown (MAIN_URL) in the same order
+            that contracts in profile page (PROFILE_URL).
+            Maybe we should ensure that.
+        """
+        balances = []
+        try:
+            raw_res = requests.get(MAIN_URL,
+                                   cookies=self._cookies,
+                                   timeout=REQUESTS_TIMEOUT)
+        except OSError:
+            raise PyHydroQuebecError("Can not get main page")
+        # Update cookies
+        self._cookies.update(raw_res.cookies)
+        # Parse html
+        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        solde_nodes = soup.find_all("div", {"class": "compte-solde"})
+        if solde_nodes == []:
+            raise PyHydroQuebecError("Can not found balance")
+        for solde_node in solde_nodes:
+            try:
+                balance = solde_node.find("p").text
+            except AttributeError:
+                raise PyHydroQuebecError("Can not found balance")
+            balances.append(float(balance[:-2].replace(",", ".")))
+
+        return balances
+
     def _load_contract_page(self, contract_url):
         """Load the profile page of a specific contract when we have
         multiple contracts
@@ -158,7 +189,6 @@ class HydroQuebecClient(object):
                                      "specific contract")
         # Update cookies
         self._cookies.update(raw_res.cookies)
- 
 
     def _get_monthly_data(self, p_p_id):
         """Get monthly data."""
@@ -225,6 +255,10 @@ class HydroQuebecClient(object):
         # onecontract. Let's get it
         if contracts == {}:
             contracts = self._get_lonely_contract()
+
+        # Get balance
+        balances = self._get_balances()
+        balance_id = 0
         # For all contracts
         for contract, contract_url in contracts.items():
             if contract_url:
@@ -242,7 +276,7 @@ class HydroQuebecClient(object):
                 daily_data = daily_data[0]['courant']
 
             # format data
-            contract_data = {}
+            contract_data = {"balance": balances[balance_id]}
             for key1, key2 in MONTHLY_MAP:
                 contract_data[key1] = monthly_data[key2]
             # We have to test daily_data because it's empty
@@ -251,6 +285,7 @@ class HydroQuebecClient(object):
                 for key1, key2 in DAILY_MAP:
                     contract_data[key1] = daily_data[key2]
             self._data[contract] = contract_data
+            balance_id += 1
 
     def get_data(self, contract=None):
         """Return collected data"""

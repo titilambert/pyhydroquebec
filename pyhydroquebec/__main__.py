@@ -22,6 +22,8 @@ def _format_output(account, all_data):
 Contract: {d[contract]}
 ===================
 
+Balance: {d[balance]:.2f} $
+
 Period Info
 ===========
 Period day number:  {d[period_length]:d}
