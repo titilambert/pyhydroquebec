@@ -7,7 +7,7 @@ install_reqs = parse_requirements('requirements.txt', session=session)
 test_reqs = parse_requirements('test_requirements.txt', session=session)
 
 setup(name='pyhydroquebec',
-      version='1.3.0',
+      version='1.3.1',
       description='Get your Hydro Quebec consumption (wwww.hydroquebec.com)',
       author='Thibault Cohen',
       author_email='titilambert@gmail.com',
