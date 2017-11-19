@@ -87,7 +87,6 @@ class HydroQuebecClient(object):
     def _get_p_p_id_and_contract(self):
         """Get id of consumption profile."""
         contracts = {}
-        from bs4 import BeautifulSoup
         try:
             raw_res = requests.get(PROFILE_URL,
                                    cookies=self._cookies,
@@ -134,13 +133,15 @@ class HydroQuebecClient(object):
         self._cookies.update(raw_res.cookies)
         # Parse html
         soup = BeautifulSoup(raw_res.content, 'html.parser')
-        info_node = soup.find("ul", {"class": "account-contract"})
+        info_node = soup.find("div", {"class": "span3 contrat"})
+        if info_node is None:
+            raise PyHydroQuebecError("Can not found contract")
         research = re.search("Contrat ([0-9]{4} [0-9]{5})", info_node.text)
         if research is not None:
             contracts[research.group(1).replace(" ", "")] = None
 
         if contracts == {}:
-            raise PyHydroQuebecError("Can Not found contract")
+            raise PyHydroQuebecError("Can not found contract")
 
         return contracts
 
@@ -164,7 +165,7 @@ class HydroQuebecClient(object):
         self._cookies.update(raw_res.cookies)
         # Parse html
         soup = BeautifulSoup(raw_res.content, 'html.parser')
-        solde_nodes = soup.find_all("div", {"class": "compte-solde"})
+        solde_nodes = soup.find_all("div", {"class": "solde-compte"})
         if solde_nodes == []:
             raise PyHydroQuebecError("Can not found balance")
         for solde_node in solde_nodes:
