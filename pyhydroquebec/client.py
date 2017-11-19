@@ -216,7 +216,8 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not get annual data")
         try:
             json_output = raw_res.json()
-        except OSError:
+        except (OSError, json.decoder.JSONDecodeError):
+            print(raw_res.text)
             raise PyHydroQuebecError("Could not get annual data")
 
         if not json_output.get('success'):
@@ -245,7 +246,7 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not get monthly data")
         try:
             json_output = raw_res.json()
-        except OSError:
+        except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecError("Could not get monthly data")
 
         if not json_output.get('success'):
@@ -270,7 +271,7 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not get daily data")
         try:
             json_output = raw_res.json()
-        except OSError:
+        except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecError("Could not get daily data")
 
         if not json_output.get('success'):
