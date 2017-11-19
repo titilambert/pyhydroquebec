@@ -16,6 +16,7 @@ MAIN_URL = "{}/portail/fr/group/clientele/gerer-mon-compte".format(HOST)
 PROFILE_URL = ("{}/portail/fr/group/clientele/"
                "portrait-de-consommation".format(HOST))
 MONTHLY_MAP = (('period_total_bill', 'montantFacturePeriode'),
+               ('period_projection', 'montantProjetePeriode'),
                ('period_length', 'nbJourLecturePeriode'),
                ('period_total_days', 'nbJourPrevuPeriode'),
                ('period_mean_daily_bill', 'moyenneDollarsJourPeriode'),
@@ -28,6 +29,14 @@ DAILY_MAP = (('yesterday_total_consumption', 'consoTotalQuot'),
              ('yesterday_lower_price_consumption', 'consoRegQuot'),
              ('yesterday_higher_price_consumption', 'consoHautQuot'),
              ('yesterday_average_temperature', 'tempMoyenneQuot'))
+ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
+              ('annual_total_consumption', 'consoTotalAnnee'),
+              ('annual_total_bill', 'montantFactureAnnee'),
+              ('annual_mean_daily_bill', 'moyenneDollarsJourAnnee'),
+              ('annual_length', 'nbJourCalendrierAnnee'),
+              ('annual_kwh_price_cent', 'coutCentkWh'),
+              ('annual_date_start', 'dateDebutAnnee'),
+              ('annual_date_end', 'dateDebutAnnee'))
 
 
 class PyHydroQuebecError(Exception):
@@ -191,17 +200,42 @@ class HydroQuebecClient(object):
         # Update cookies
         self._cookies.update(raw_res.cookies)
 
+    def _get_annual_data(self, p_p_id):
+        """Get annual data."""
+        params = {"p_p_id": p_p_id,
+                  "p_p_lifecycle": 2,
+                  "p_p_state": "normal",
+                  "p_p_mode": "view",
+                  "p_p_resource_id": "resourceObtenirDonneesConsommationAnnuelles"}
+        try:
+            raw_res = requests.get(PROFILE_URL,
+                                   params=params,
+                                   cookies=self._cookies,
+                                   timeout=REQUESTS_TIMEOUT)
+        except OSError:
+            raise PyHydroQuebecError("Can not get annual data")
+        try:
+            json_output = raw_res.json()
+        except OSError:
+            raise PyHydroQuebecError("Could not get annual data")
+
+        if not json_output.get('success'):
+            raise PyHydroQuebecError("Could not get annual data")
+
+        if len(json_output.get('results')) < 1:
+            raise PyHydroQuebecError("Could not get annual data")
+
+        if 'courant' not in json_output.get('results')[0]:
+            raise PyHydroQuebecError("Could not get annual data")
+
+        return json_output.get('results')[0]['courant']
+
     def _get_monthly_data(self, p_p_id):
         """Get monthly data."""
         params = {"p_p_id": p_p_id,
                   "p_p_lifecycle": 2,
                   "p_p_resource_id": ("resourceObtenirDonnees"
                                       "PeriodesConsommation")}
-        raw_res = requests.get(PROFILE_URL,
-                                   params=params,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
-
         try:
             raw_res = requests.get(PROFILE_URL,
                                    params=params,
@@ -265,6 +299,8 @@ class HydroQuebecClient(object):
             if contract_url:
                 self._load_contract_page(contract_url)
 
+            # Get Annual data
+            annual_data = self._get_annual_data(p_p_id)
             # Get Monthly data
             monthly_data = self._get_monthly_data(p_p_id)[0]
             # Get daily data
@@ -280,6 +316,8 @@ class HydroQuebecClient(object):
             contract_data = {"balance": balances[balance_id]}
             for key1, key2 in MONTHLY_MAP:
                 contract_data[key1] = monthly_data[key2]
+            for key1, key2 in ANNUAL_MAP:
+                contract_data[key1] = annual_data[key2]
             # We have to test daily_data because it's empty
             # At the end/starts of a period
             if len(daily_data) > 0:
