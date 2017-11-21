@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import asyncio
 import json
 import sys
 
@@ -86,8 +87,10 @@ def main():
                         default=REQUESTS_TIMEOUT, help='Request timeout')
     args = parser.parse_args()
     client = HydroQuebecClient(args.username, args.password, args.timeout)
+    loop = asyncio.get_event_loop()
     try:
-        client.fetch_data()
+        fut = asyncio.wait([client.fetch_data()])
+        loop.run_until_complete(fut)
     except BaseException as exp:
         print(exp)
         return 1

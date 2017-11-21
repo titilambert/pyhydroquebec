@@ -4,9 +4,10 @@ PyHydroQuebec
 import json
 import logging
 import re
+import asyncio
 
+import aiohttp
 from bs4 import BeautifulSoup
-import requests
 
 REQUESTS_TIMEOUT = 15
 
@@ -51,19 +52,20 @@ class HydroQuebecClient(object):
         self.password = password
         self._contracts = []
         self._data = {}
-        self._cookies = None
+        self._session = None
         self._timeout = timeout
 
+    @asyncio.coroutine
     def _get_login_page(self):
         """Go to the login page."""
         try:
-            raw_res = requests.get(HOME_URL, timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(HOME_URL,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not connect to login page")
-        # Get cookies
-        self._cookies = raw_res.cookies
         # Get login url
-        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        content = yield from raw_res.text()
+        soup = BeautifulSoup(content, 'html.parser')
         form_node = soup.find('form', {'name': 'fm'})
         if form_node is None:
             raise PyHydroQuebecError("No login form find")
@@ -72,40 +74,36 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Can not found login url")
         return login_url
 
+    @asyncio.coroutine
     def _post_login_page(self, login_url):
         """Login to HydroQuebec website."""
         data = {"login": self.username,
                 "_58_password": self.password}
 
         try:
-            raw_res = requests.post(login_url,
-                                    data=data,
-                                    cookies=self._cookies,
-                                    allow_redirects=False,
-                                    timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.post(login_url,
+                                                    data=data,
+                                                    timeout=self._timeout,
+                                                    allow_redirects=False)
         except OSError:
             raise PyHydroQuebecError("Can not submit login form")
-        if raw_res.status_code != 302:
+        if raw_res.status != 302:
             raise PyHydroQuebecError("Login error: Bad HTTP status code. "
                                      "Please check your username/password.")
-
-        # Update cookies
-        self._cookies.update(raw_res.cookies)
         return True
 
+    @asyncio.coroutine
     def _get_p_p_id_and_contract(self):
         """Get id of consumption profile."""
         contracts = {}
         try:
-            raw_res = requests.get(PROFILE_URL,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get profile page")
-        # Update cookies
-        self._cookies.update(raw_res.cookies)
         # Parse html
-        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        content = yield from raw_res.text()
+        soup = BeautifulSoup(content, 'html.parser')
         # Search contracts
         for node in soup.find_all('span', {"class": "contrat"}):
             rematch = re.match("C[a-z]* ([0-9]{4} [0-9]{5})", node.text)
@@ -129,19 +127,18 @@ class HydroQuebecClient(object):
 
         return p_p_id, contracts
 
+    @asyncio.coroutine
     def _get_lonely_contract(self):
         """Get contract number when we have only one contract"""
         contracts = {}
         try:
-            raw_res = requests.get(MAIN_URL,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(MAIN_URL,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get main page")
-        # Update cookies
-        self._cookies.update(raw_res.cookies)
         # Parse html
-        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        content = yield from raw_res.text()
+        soup = BeautifulSoup(content, 'html.parser')
         info_node = soup.find("div", {"class": "span3 contrat"})
         if info_node is None:
             raise PyHydroQuebecError("Can not found contract")
@@ -154,6 +151,7 @@ class HydroQuebecClient(object):
 
         return contracts
 
+    @asyncio.coroutine
     def _get_balances(self):
         """Get all balances
 
@@ -165,15 +163,13 @@ class HydroQuebecClient(object):
         """
         balances = []
         try:
-            raw_res = requests.get(MAIN_URL,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(MAIN_URL,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get main page")
-        # Update cookies
-        self._cookies.update(raw_res.cookies)
         # Parse html
-        soup = BeautifulSoup(raw_res.content, 'html.parser')
+        content = yield from raw_res.text()
+        soup = BeautifulSoup(content, 'html.parser')
         solde_nodes = soup.find_all("div", {"class": "solde-compte"})
         if solde_nodes == []:
             raise PyHydroQuebecError("Can not found balance")
@@ -186,20 +182,19 @@ class HydroQuebecClient(object):
 
         return balances
 
+    @asyncio.coroutine
     def _load_contract_page(self, contract_url):
         """Load the profile page of a specific contract when we have
         multiple contracts
         """
         try:
-            raw_res = requests.get(contract_url,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(contract_url,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get profile page for a "
                                      "specific contract")
-        # Update cookies
-        self._cookies.update(raw_res.cookies)
 
+    @asyncio.coroutine
     def _get_annual_data(self, p_p_id):
         """Get annual data."""
         params = {"p_p_id": p_p_id,
@@ -208,14 +203,13 @@ class HydroQuebecClient(object):
                   "p_p_mode": "view",
                   "p_p_resource_id": "resourceObtenirDonneesConsommationAnnuelles"}
         try:
-            raw_res = requests.get(PROFILE_URL,
-                                   params=params,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   params=params,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get annual data")
         try:
-            json_output = raw_res.json()
+            json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
             print(raw_res.text)
             raise PyHydroQuebecError("Could not get annual data")
@@ -231,6 +225,7 @@ class HydroQuebecClient(object):
 
         return json_output.get('results')[0]['courant']
 
+    @asyncio.coroutine
     def _get_monthly_data(self, p_p_id):
         """Get monthly data."""
         params = {"p_p_id": p_p_id,
@@ -238,14 +233,13 @@ class HydroQuebecClient(object):
                   "p_p_resource_id": ("resourceObtenirDonnees"
                                       "PeriodesConsommation")}
         try:
-            raw_res = requests.get(PROFILE_URL,
-                                   params=params,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   params=params,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get monthly data")
         try:
-            json_output = raw_res.json()
+            json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecError("Could not get monthly data")
 
@@ -254,6 +248,7 @@ class HydroQuebecClient(object):
 
         return json_output.get('results')
 
+    @asyncio.coroutine
     def _get_daily_data(self, p_p_id, start_date, end_date):
         """Get daily data."""
         params = {"p_p_id": p_p_id,
@@ -263,14 +258,13 @@ class HydroQuebecClient(object):
                   "dateDebutPeriode": start_date,
                   "dateFinPeriode": end_date}
         try:
-            raw_res = requests.get(PROFILE_URL,
-                                   params=params,
-                                   cookies=self._cookies,
-                                   timeout=REQUESTS_TIMEOUT)
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   params=params,
+                                                   timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get daily data")
         try:
-            json_output = raw_res.json()
+            json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecError("Could not get daily data")
 
@@ -279,53 +273,57 @@ class HydroQuebecClient(object):
 
         return json_output.get('results')
 
+    @asyncio.coroutine
     def fetch_data(self):
         """Get the latest data from HydroQuebec."""
-        # Get login page
-        login_url = self._get_login_page()
-        # Post login page
-        self._post_login_page(login_url)
-        # Get p_p_id and contracts
-        p_p_id, contracts = self._get_p_p_id_and_contract()
-        # If we don't have any contrats that means we have only
-        # onecontract. Let's get it
-        if contracts == {}:
-            contracts = self._get_lonely_contract()
+        with aiohttp.ClientSession() as session:
+            self._session = session
+            # Get login page
+            login_url = yield from self._get_login_page()
+            # Post login page
+            yield from self._post_login_page(login_url)
+            # Get p_p_id and contracts
+            p_p_id, contracts = yield from self._get_p_p_id_and_contract()
+            # If we don't have any contrats that means we have only
+            # onecontract. Let's get it
+            if contracts == {}:
+                contracts = yield from self._get_lonely_contract()
 
-        # Get balance
-        balances = self._get_balances()
-        balance_id = 0
-        # For all contracts
-        for contract, contract_url in contracts.items():
-            if contract_url:
-                self._load_contract_page(contract_url)
+            # Get balance
+            balances = yield from self._get_balances()
+            balance_id = 0
+            # For all contracts
+            for contract, contract_url in contracts.items():
+                if contract_url:
+                    yield from self._load_contract_page(contract_url)
 
-            # Get Annual data
-            annual_data = self._get_annual_data(p_p_id)
-            # Get Monthly data
-            monthly_data = self._get_monthly_data(p_p_id)[0]
-            # Get daily data
-            start_date = monthly_data.get('dateDebutPeriode')
-            end_date = monthly_data.get('dateFinPeriode')
-            daily_data = self._get_daily_data(p_p_id, start_date, end_date)
-            # We have to test daily_data because it's empty
-            # At the end/starts of a period
-            if len(daily_data) > 0:
-                daily_data = daily_data[0]['courant']
+                # Get Annual data
+                annual_data = yield from self._get_annual_data(p_p_id)
+                # Get Monthly data
+                monthly_data = yield from self._get_monthly_data(p_p_id)
+                monthly_data = monthly_data[0]
+                # Get daily data
+                start_date = monthly_data.get('dateDebutPeriode')
+                end_date = monthly_data.get('dateFinPeriode')
+                daily_data = yield from self._get_daily_data(p_p_id, start_date, end_date)
+                # We have to test daily_data because it's empty
+                # At the end/starts of a period
+                if len(daily_data) > 0:
+                    daily_data = daily_data[0]['courant']
 
-            # format data
-            contract_data = {"balance": balances[balance_id]}
-            for key1, key2 in MONTHLY_MAP:
-                contract_data[key1] = monthly_data[key2]
-            for key1, key2 in ANNUAL_MAP:
-                contract_data[key1] = annual_data[key2]
-            # We have to test daily_data because it's empty
-            # At the end/starts of a period
-            if len(daily_data) > 0:
-                for key1, key2 in DAILY_MAP:
-                    contract_data[key1] = daily_data[key2]
-            self._data[contract] = contract_data
-            balance_id += 1
+                # format data
+                contract_data = {"balance": balances[balance_id]}
+                for key1, key2 in MONTHLY_MAP:
+                    contract_data[key1] = monthly_data[key2]
+                for key1, key2 in ANNUAL_MAP:
+                    contract_data[key1] = annual_data[key2]
+                # We have to test daily_data because it's empty
+                # At the end/starts of a period
+                if len(daily_data) > 0:
+                    for key1, key2 in DAILY_MAP:
+                        contract_data[key1] = daily_data[key2]
+                self._data[contract] = contract_data
+                balance_id += 1
 
     def get_data(self, contract=None):
         """Return collected data"""
