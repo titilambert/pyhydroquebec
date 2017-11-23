@@ -44,6 +44,10 @@ class PyHydroQuebecError(Exception):
     pass
 
 
+class PyHydroQuebecAnnualError(PyHydroQuebecError):
+    pass
+
+
 class HydroQuebecClient(object):
 
     def __init__(self, username, password, timeout=REQUESTS_TIMEOUT):
@@ -207,21 +211,21 @@ class HydroQuebecClient(object):
                                                    params=params,
                                                    timeout=self._timeout)
         except OSError:
-            raise PyHydroQuebecError("Can not get annual data")
+            raise PyHydroQuebecAnnualError("Can not get annual data")
         try:
             json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
             print(raw_res.text)
-            raise PyHydroQuebecError("Could not get annual data")
+            raise PyHydroQuebecAnnualError("Could not get annual data")
 
         if not json_output.get('success'):
-            raise PyHydroQuebecError("Could not get annual data")
+            raise PyHydroQuebecAnnualError("Could not get annual data")
 
         if len(json_output.get('results')) < 1:
-            raise PyHydroQuebecError("Could not get annual data")
+            raise PyHydroQuebecAnnualError("Could not get annual data")
 
         if 'courant' not in json_output.get('results')[0]:
-            raise PyHydroQuebecError("Could not get annual data")
+            raise PyHydroQuebecAnnualError("Could not get annual data")
 
         return json_output.get('results')[0]['courant']
 
@@ -298,7 +302,12 @@ class HydroQuebecClient(object):
                     yield from self._load_contract_page(contract_url)
 
                 # Get Annual data
-                annual_data = yield from self._get_annual_data(p_p_id)
+                try:
+                    annual_data = yield from self._get_annual_data(p_p_id)
+                except PyHydroQuebecAnnualError:
+                    # We don't have annual data, which is possible if your
+                    # contract is younger than 1 year
+                    annual_data = {}
                 # Get Monthly data
                 monthly_data = yield from self._get_monthly_data(p_p_id)
                 monthly_data = monthly_data[0]
@@ -316,7 +325,7 @@ class HydroQuebecClient(object):
                 for key1, key2 in MONTHLY_MAP:
                     contract_data[key1] = monthly_data[key2]
                 for key1, key2 in ANNUAL_MAP:
-                    contract_data[key1] = annual_data[key2]
+                    contract_data[key1] = annual_data.get(key2, "")
                 # We have to test daily_data because it's empty
                 # At the end/starts of a period
                 if len(daily_data) > 0:
