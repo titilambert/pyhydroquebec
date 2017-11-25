@@ -215,7 +215,6 @@ class HydroQuebecClient(object):
         try:
             json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
-            print(raw_res.text)
             raise PyHydroQuebecAnnualError("Could not get annual data")
 
         if not json_output.get('success'):
