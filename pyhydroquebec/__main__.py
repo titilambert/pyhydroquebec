@@ -17,6 +17,12 @@ def _format_output(account, all_data):
 #################################""".format(account))
     for contract, data in all_data.items():
         data['contract'] = contract
+        if data['period_total_bill'] is None:
+            data['period_total_bill'] = 0.0
+        if data['period_projection'] is None:
+            data['period_projection'] = 0.0
+        if data['period_mean_daily_bill'] is None:
+            data['period_mean_daily_bill'] = 0.0
         output = ("""
 ----------------------------------------------------------------
 
@@ -94,6 +100,8 @@ def main():
     except BaseException as exp:
         print(exp)
         return 1
+    finally:
+        client.close_session()
     if not client.get_data():
         return 2
 

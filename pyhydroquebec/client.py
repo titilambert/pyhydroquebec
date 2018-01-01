@@ -50,14 +50,21 @@ class PyHydroQuebecAnnualError(PyHydroQuebecError):
 
 class HydroQuebecClient(object):
 
-    def __init__(self, username, password, timeout=REQUESTS_TIMEOUT):
+    def __init__(self, username, password, timeout=REQUESTS_TIMEOUT,
+                 session=None):
         """Initialize the client object."""
         self.username = username
         self.password = password
         self._contracts = []
         self._data = {}
-        self._session = None
+        self._session = session
         self._timeout = timeout
+
+    @asyncio.coroutine
+    def _get_httpsession(self):
+        """Set http session."""
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
 
     @asyncio.coroutine
     def _get_login_page(self):
@@ -133,7 +140,7 @@ class HydroQuebecClient(object):
 
     @asyncio.coroutine
     def _get_lonely_contract(self):
-        """Get contract number when we have only one contract"""
+        """Get contract number when we have only one contract."""
         contracts = {}
         try:
             raw_res = yield from self._session.get(MAIN_URL,
@@ -189,7 +196,7 @@ class HydroQuebecClient(object):
     @asyncio.coroutine
     def _load_contract_page(self, contract_url):
         """Load the profile page of a specific contract when we have
-        multiple contracts
+        multiple contracts.
         """
         try:
             raw_res = yield from self._session.get(contract_url,
@@ -279,62 +286,62 @@ class HydroQuebecClient(object):
     @asyncio.coroutine
     def fetch_data(self):
         """Get the latest data from HydroQuebec."""
-        with aiohttp.ClientSession() as session:
-            self._session = session
-            # Get login page
-            login_url = yield from self._get_login_page()
-            # Post login page
-            yield from self._post_login_page(login_url)
-            # Get p_p_id and contracts
-            p_p_id, contracts = yield from self._get_p_p_id_and_contract()
-            # If we don't have any contrats that means we have only
-            # onecontract. Let's get it
-            if contracts == {}:
-                contracts = yield from self._get_lonely_contract()
+        # Get http session
+        yield from self._get_httpsession()
+        # Get login page
+        login_url = yield from self._get_login_page()
+        # Post login page
+        yield from self._post_login_page(login_url)
+        # Get p_p_id and contracts
+        p_p_id, contracts = yield from self._get_p_p_id_and_contract()
+        # If we don't have any contrats that means we have only
+        # onecontract. Let's get it
+        if contracts == {}:
+            contracts = yield from self._get_lonely_contract()
 
-            # Get balance
-            balances = yield from self._get_balances()
-            balance_id = 0
-            # For all contracts
-            for contract, contract_url in contracts.items():
-                if contract_url:
-                    yield from self._load_contract_page(contract_url)
+        # Get balance
+        balances = yield from self._get_balances()
+        balance_id = 0
+        # For all contracts
+        for contract, contract_url in contracts.items():
+            if contract_url:
+                yield from self._load_contract_page(contract_url)
 
-                # Get Annual data
-                try:
-                    annual_data = yield from self._get_annual_data(p_p_id)
-                except PyHydroQuebecAnnualError:
-                    # We don't have annual data, which is possible if your
-                    # contract is younger than 1 year
-                    annual_data = {}
-                # Get Monthly data
-                monthly_data = yield from self._get_monthly_data(p_p_id)
-                monthly_data = monthly_data[0]
-                # Get daily data
-                start_date = monthly_data.get('dateDebutPeriode')
-                end_date = monthly_data.get('dateFinPeriode')
-                daily_data = yield from self._get_daily_data(p_p_id, start_date, end_date)
-                # We have to test daily_data because it's empty
-                # At the end/starts of a period
-                if len(daily_data) > 0:
-                    daily_data = daily_data[0]['courant']
+            # Get Annual data
+            try:
+                annual_data = yield from self._get_annual_data(p_p_id)
+            except PyHydroQuebecAnnualError:
+                # We don't have annual data, which is possible if your
+                # contract is younger than 1 year
+                annual_data = {}
+            # Get Monthly data
+            monthly_data = yield from self._get_monthly_data(p_p_id)
+            monthly_data = monthly_data[0]
+            # Get daily data
+            start_date = monthly_data.get('dateDebutPeriode')
+            end_date = monthly_data.get('dateFinPeriode')
+            daily_data = yield from self._get_daily_data(p_p_id, start_date, end_date)
+            # We have to test daily_data because it's empty
+            # At the end/starts of a period
+            if len(daily_data) > 0:
+                daily_data = daily_data[0]['courant']
 
-                # format data
-                contract_data = {"balance": balances[balance_id]}
-                for key1, key2 in MONTHLY_MAP:
-                    contract_data[key1] = monthly_data[key2]
-                for key1, key2 in ANNUAL_MAP:
-                    contract_data[key1] = annual_data.get(key2, "")
-                # We have to test daily_data because it's empty
-                # At the end/starts of a period
-                if len(daily_data) > 0:
-                    for key1, key2 in DAILY_MAP:
-                        contract_data[key1] = daily_data[key2]
-                self._data[contract] = contract_data
-                balance_id += 1
+            # format data
+            contract_data = {"balance": balances[balance_id]}
+            for key1, key2 in MONTHLY_MAP:
+                contract_data[key1] = monthly_data[key2]
+            for key1, key2 in ANNUAL_MAP:
+                contract_data[key1] = annual_data.get(key2, "")
+            # We have to test daily_data because it's empty
+            # At the end/starts of a period
+            if len(daily_data) > 0:
+                for key1, key2 in DAILY_MAP:
+                    contract_data[key1] = daily_data[key2]
+            self._data[contract] = contract_data
+            balance_id += 1
 
     def get_data(self, contract=None):
-        """Return collected data"""
+        """Return collected data."""
         if contract is None:
             return self._data
         elif contract in self._data.keys():
@@ -343,4 +350,9 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecError("Contract {} not found".format(contract))
 
     def get_contracts(self):
+        """Return Contract list."""
         return set(self._data.keys())
+
+    def close_session(self):
+        """Close current session."""
+        self._session.close()
