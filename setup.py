@@ -12,7 +12,7 @@ if sys.version_info < (3,4):
     sys.exit('Sorry, Python < 3.4 is not supported')
 
 setup(name='pyhydroquebec',
-      version='2.0.2',
+      version='2.1.0',
       description='Get your Hydro Quebec consumption (wwww.hydroquebec.com)',
       author='Thibault Cohen',
       author_email='titilambert@gmail.com',
