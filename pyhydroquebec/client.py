@@ -38,7 +38,7 @@ ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
               ('annual_length', 'nbJourCalendrierAnnee'),
               ('annual_kwh_price_cent', 'coutCentkWh'),
               ('annual_date_start', 'dateDebutAnnee'),
-              ('annual_date_end', 'dateDebutAnnee'))
+              ('annual_date_end', 'dateFinAnnee'))
 
 
 class PyHydroQuebecError(Exception):
