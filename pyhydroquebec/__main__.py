@@ -8,7 +8,7 @@ import sys
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT
 
 
-def _format_output(account, all_data):
+def _format_output(account, all_data, show_hourly=False):
     """Format data to get a readable output"""
     print("""
 #################################
@@ -60,6 +60,15 @@ Lower price:            {d[yesterday_lower_price_consumption]:.2f} kWh
 Higher price:           {d[yesterday_higher_price_consumption]:.2f} kWh
 Total:                  {d[yesterday_total_consumption]:.2f} kWh""")
             print(output2.format(d=data))
+        if show_hourly:
+            msg = ("""
+Yesterday consumption details
+-----------------------------
+   Hour  | Temperature | Lower price consumption | Higher price consumption | total comsumption
+""")
+            for hdata in data['yesterday_hourly_consumption']:
+                msg += "{d[hour]} | {d[temp]:8d} °C | {d[lower]:19.2f} kWh | {d[high]:20.2f} kWh | {d[total]:.2f} kWh\n".format(d=hdata)
+            print(msg)
 
         output3 = ("""
 Annual Total
@@ -74,7 +83,7 @@ Mean dailyconsumption:  {d[annual_mean_daily_consumption]:.2f} kWh
 kWh price:              {d[annual_kwh_price_cent]:0.2f} ¢
 """)
         print(output3.format(d=data))
-
+            
 
 def main():
     """Main function"""
@@ -89,6 +98,8 @@ def main():
                         default=None, help='Contract number')
     parser.add_argument('-l', '--list-contracts', action='store_true',
                         default=False, help='List all your contracts')
+    parser.add_argument('-H', '--hourly', action='store_true',
+                        default=False, help='Show yesterday hourly consumption')
     parser.add_argument('-t', '--timeout',
                         default=REQUESTS_TIMEOUT, help='Request timeout')
     args = parser.parse_args()
@@ -110,7 +121,7 @@ def main():
     elif args.json:
         print(json.dumps(client.get_data(args.contract)))
     else:
-        _format_output(args.username, client.get_data(args.contract))
+        _format_output(args.username, client.get_data(args.contract), args.hourly)
 
 
 if __name__ == '__main__':

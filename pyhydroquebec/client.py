@@ -1,10 +1,11 @@
 """
 PyHydroQuebec
 """
+import asyncio
+import datetime
 import json
 import logging
 import re
-import asyncio
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -286,6 +287,62 @@ class HydroQuebecClient(object):
         return json_output.get('results')
 
     @asyncio.coroutine
+    def _get_hourly_data(self, day_date, p_p_id):
+        day_date="2018-02-17"
+        params = {"p_p_id": p_p_id,
+                  "p_p_lifecycle": 2,
+                  "p_p_state": "normal",
+                  "p_p_mode": "view",
+                  "p_p_resource_id": "resourceObtenirDonneesConsommationHoraires",
+                  "p_p_cacheability": "cacheLevelPage",
+                  "p_p_col_id": "column-2",
+                  "p_p_col_count": 1,
+                  "date": day_date,
+                  }
+        try:
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   params=params,
+                                                   timeout=self._timeout)
+        except OSError:
+            raise PyHydroQuebecError("Can not get hourly data")
+        try:
+            json_output = yield from raw_res.json(content_type='text/json')
+        except (OSError, json.decoder.JSONDecodeError):
+            raise PyHydroQuebecAnnualError("Could not get hourly data")
+        hourly_consumption_data = json_output['results']['listeDonneesConsoEnergieHoraire']
+        params = {"p_p_id": p_p_id,
+                  "p_p_lifecycle": 2,
+                  "p_p_state": "normal",
+                  "p_p_mode": "view",
+                  "p_p_resource_id": "resourceObtenirDonneesMeteoHoraires",
+                  "p_p_cacheability": "cacheLevelPage",
+                  "p_p_col_id": "column-2",
+                  "p_p_col_count": 1,
+                  "dateDebut": day_date,
+                  "dateFin": day_date,
+                  }
+        try:
+            raw_res = yield from self._session.get(PROFILE_URL,
+                                                   params=params,
+                                                   timeout=self._timeout)
+        except OSError:
+            raise PyHydroQuebecError("Can not get hourly data")
+        try:
+            json_output = yield from raw_res.json(content_type='text/json')
+        except (OSError, json.decoder.JSONDecodeError):
+            raise PyHydroQuebecAnnualError("Could not get hourly data")
+        hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
+        # Add temp in data
+        hourly_data = [{'hour': data['heure'],
+                        'lower': data['consoReg'],
+                        'high': data['consoHaut'],
+                        'total': data['consoTotal'],
+                        'temp': hourly_weather_data[i],
+                         }
+                       for i, data  in enumerate(hourly_consumption_data)]
+        return hourly_data
+
+    @asyncio.coroutine
     def fetch_data(self):
         """Get the latest data from HydroQuebec."""
         # Get http session
@@ -309,6 +366,11 @@ class HydroQuebecClient(object):
             if contract_url:
                 yield from self._load_contract_page(contract_url)
 
+            # Get Hourly data
+            yesterday = datetime.date.today() - datetime.timedelta(days=1)
+            day_date = yesterday.strftime("%Y-%m-%d")
+            hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
+
             # Get Annual data
             try:
                 annual_data = yield from self._get_annual_data(p_p_id)
@@ -327,7 +389,6 @@ class HydroQuebecClient(object):
             # At the end/starts of a period
             if len(daily_data) > 0:
                 daily_data = daily_data[0]['courant']
-
             # format data
             contract_data = {"balance": balances[balance_id]}
             for key1, key2 in MONTHLY_MAP:
@@ -336,9 +397,13 @@ class HydroQuebecClient(object):
                 contract_data[key1] = annual_data.get(key2, "")
             # We have to test daily_data because it's empty
             # At the end/starts of a period
-            if len(daily_data) > 0:
+            if daily_data:
                 for key1, key2 in DAILY_MAP:
                     contract_data[key1] = daily_data[key2]
+            # Hourly
+            if hourly_data:
+                contract_data['yesterday_hourly_consumption'] = hourly_data
+            # Add contract
             self._data[contract] = contract_data
             balance_id += 1
 
