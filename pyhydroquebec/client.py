@@ -189,7 +189,9 @@ class HydroQuebecClient(object):
                 balance = solde_node.find("p").text
             except AttributeError:
                 raise PyHydroQuebecError("Can not found balance")
-            balances.append(float(balance[:-2].replace(",", ".")))
+            balances.append(float(balance[:-2]\
+                            .replace(",", ".")\
+                            .replace("\xa0", "")))
 
         return balances
 
