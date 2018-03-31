@@ -49,15 +49,17 @@ Mean daily:             {d[period_mean_daily_consumption]:.2f} kWh""")
         print(output.format(d=data))
         if data.get("period_average_temperature") is not None:
             output2 = (
-"""Temperature:            {d[period_average_temperature]:d} °C
-
+"""Temperature:            {d[period_average_temperature]:d} °C""")
+            print(output2.format(d=data))
+        if data.get("yesterday_average_temperature") is not None:
+            output3 = ("""
 Yesterday consumption
 =====================
 Temperature:            {d[yesterday_average_temperature]:d} °C
 Lower price:            {d[yesterday_lower_price_consumption]:.2f} kWh
 Higher price:           {d[yesterday_higher_price_consumption]:.2f} kWh
 Total:                  {d[yesterday_total_consumption]:.2f} kWh""")
-            print(output2.format(d=data))
+            print(output3.format(d=data))
         if show_hourly:
             msg = ("""
 Yesterday consumption details
