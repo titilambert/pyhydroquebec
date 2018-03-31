@@ -110,7 +110,9 @@ def main():
         print(exp)
         return 1
     finally:
-        client.close_session()
+        close_fut = asyncio.wait([client.close_session()])
+        loop.run_until_complete(close_fut)
+
     if not client.get_data():
         return 2
 

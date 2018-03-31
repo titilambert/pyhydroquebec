@@ -420,6 +420,6 @@ class HydroQuebecClient(object):
         """Return Contract list."""
         return set(self._data.keys())
 
-    def close_session(self):
+    async def close_session(self):
         """Close current session."""
-        self._session.close()
+        await self._session.close()
