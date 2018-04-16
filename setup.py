@@ -9,7 +9,7 @@ install_requires = list(val.strip() for val in open('requirements.txt'))
 tests_require = list(val.strip() for val in open('test_requirements.txt'))
 
 setup(name='pyhydroquebec',
-      version='2.2.1',
+      version='2.2.2',
       description='Get your Hydro Quebec consumption (wwww.hydroquebec.com)',
       author='Thibault Cohen',
       author_email='titilambert@gmail.com',
