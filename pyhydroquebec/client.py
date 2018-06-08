@@ -373,8 +373,8 @@ class HydroQuebecClient(object):
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
             data = {}
-            dates = [for date in (start_date + datetime.timedelta(n)
-                     for n in range(int((end_date - start_date).days)))]
+            dates = [ (start_date + datetime.timedelta(n))
+                      for n in range(int((end_date - start_date).days))]
 
             for date in dates:
                 # Get Hourly data
