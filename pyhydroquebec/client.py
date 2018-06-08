@@ -190,8 +190,8 @@ class HydroQuebecClient(object):
                 balance = solde_node.find("p").text
             except AttributeError:
                 raise PyHydroQuebecError("Can not found balance")
-            balances.append(float(balance[:-2]\
-                            .replace(",", ".")\
+            balances.append(float(balance[:-2]
+                            .replace(",", ".")
                             .replace("\xa0", "")))
 
         return balances
@@ -334,17 +334,18 @@ class HydroQuebecClient(object):
         hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
         # Add temp in data
         processed_hourly_data = [{'hour': data['heure'],
-                        'lower': data['consoReg'],
-                        'high': data['consoHaut'],
-                        'total': data['consoTotal'],
-                        'temp': hourly_weather_data[i],
-                         }
-                       for i, data  in enumerate(hourly_consumption_data)]
+                                  'lower': data['consoReg'],
+                                  'high': data['consoHaut'],
+                                  'total': data['consoTotal'],
+                                  'temp': hourly_weather_data[i]}
+                                 for i, data in enumerate(hourly_consumption_data)]
 
-        raw_hourly_data = {'Energy':hourly_consumption_data, 'Power':hourly_power_data, 'Weather':hourly_weather_data}
-        hourly_data = {'processed_hourly_data':processed_hourly_data, 'raw_hourly_data':raw_hourly_data}
+        raw_hourly_data = {'Energy': hourly_consumption_data,
+                           'Power': hourly_power_data,
+                           'Weather': hourly_weather_data}
+        hourly_data = {'processed_hourly_data': processed_hourly_data,
+                       'raw_hourly_data': raw_hourly_data}
         return hourly_data
-
 
     @asyncio.coroutine
     def fetch_data_detailled_energy_use(self, contract, start_date, end_date):
@@ -361,8 +362,7 @@ class HydroQuebecClient(object):
         # onecontract. Let's get it
         if contracts == {}:
             contracts = yield from self._get_lonely_contract()
-
-        #For all contracts
+        # For all contracts
         for contract, contract_url in contracts.items():
             if contract_url:
                 yield from self._load_contract_page(contract_url)
@@ -373,17 +373,17 @@ class HydroQuebecClient(object):
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
             data = {}
+            dates = [ (start_date + datetime.timedelta(n))
+                      for n in range(int((end_date - start_date).days))]
 
-            for date in (start_date + datetime.timedelta(n) for n in range(int ((end_date - start_date).days))):
+            for date in dates:
                 # Get Hourly data
                 day_date = date.strftime("%Y-%m-%d")
                 hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
                 data[day_date] = hourly_data['raw_hourly_data']
-            
 
             # Add contract
             self._data[contract] = data
-
 
     @asyncio.coroutine
     def fetch_data(self):
