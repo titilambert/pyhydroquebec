@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import datetime
 import json
 import sys
 
@@ -48,8 +49,7 @@ Total:                  {d[period_total_consumption]:.2f} kWh
 Mean daily:             {d[period_mean_daily_consumption]:.2f} kWh""")
         print(output.format(d=data))
         if data.get("period_average_temperature") is not None:
-            output2 = (
-"""Temperature:            {d[period_average_temperature]:d} °C""")
+            output2 = ("""Temperature:            {d[period_average_temperature]:d} °C""")
             print(output2.format(d=data))
         if data.get("yesterday_average_temperature") is not None:
             output3 = ("""
@@ -83,7 +83,7 @@ Mean dailyconsumption:  {d[annual_mean_daily_consumption]:.2f} kWh
 kWh price:              {d[annual_kwh_price_cent]:0.2f} ¢
 """)
         print(output3.format(d=data))
-            
+
 
 def main():
     """Main function"""
@@ -102,11 +102,28 @@ def main():
                         default=False, help='Show yesterday hourly consumption')
     parser.add_argument('-t', '--timeout',
                         default=REQUESTS_TIMEOUT, help='Request timeout')
+    raw_group = parser.add_argument_group('Detailled-energy raw download option')
+    raw_group.add_argument('--detailled-energy', action='store_true',
+                           default=False, help='Get raw json output download')
+    raw_group.add_argument('--start-date',
+                           default=None, help='Start date for detailled-output')
+    raw_group.add_argument('--end-date',
+                           default=datetime.date.today().strftime("%Y-%m-%d"),
+                           help="End date for detailled-output")
+
     args = parser.parse_args()
+
     client = HydroQuebecClient(args.username, args.password, args.timeout)
     loop = asyncio.get_event_loop()
+
+    if args.detailled_energy is False:
+        async_func = client.fetch_data()
+    else:
+        async_func = client.fetch_data_detailled_energy_use(args.contract,
+                                                            args.start_date,
+                                                            args.end_date)
     try:
-        fut = asyncio.wait([client.fetch_data()])
+        fut = asyncio.wait([async_func])
         loop.run_until_complete(fut)
     except BaseException as exp:
         print(exp)
@@ -120,7 +137,7 @@ def main():
 
     if args.list_contracts:
         print("Contracts: {}".format(", ".join(client.get_contracts())))
-    elif args.json:
+    elif args.json or args.detailled_energy:
         print(json.dumps(client.get_data(args.contract)))
     else:
         _format_output(args.username, client.get_data(args.contract), args.hourly)

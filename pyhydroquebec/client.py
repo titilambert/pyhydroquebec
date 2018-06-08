@@ -190,8 +190,8 @@ class HydroQuebecClient(object):
                 balance = solde_node.find("p").text
             except AttributeError:
                 raise PyHydroQuebecError("Can not found balance")
-            balances.append(float(balance[:-2]\
-                            .replace(",", ".")\
+            balances.append(float(balance[:-2]
+                            .replace(",", ".")
                             .replace("\xa0", "")))
 
         return balances
@@ -288,7 +288,6 @@ class HydroQuebecClient(object):
 
     @asyncio.coroutine
     def _get_hourly_data(self, day_date, p_p_id):
-        day_date="2018-02-17"
         params = {"p_p_id": p_p_id,
                   "p_p_lifecycle": 2,
                   "p_p_state": "normal",
@@ -310,6 +309,7 @@ class HydroQuebecClient(object):
         except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecAnnualError("Could not get hourly data")
         hourly_consumption_data = json_output['results']['listeDonneesConsoEnergieHoraire']
+        hourly_power_data = json_output['results']['listeDonneesConsoPuissanceHoraire']
         params = {"p_p_id": p_p_id,
                   "p_p_lifecycle": 2,
                   "p_p_state": "normal",
@@ -333,14 +333,57 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecAnnualError("Could not get hourly data")
         hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
         # Add temp in data
-        hourly_data = [{'hour': data['heure'],
-                        'lower': data['consoReg'],
-                        'high': data['consoHaut'],
-                        'total': data['consoTotal'],
-                        'temp': hourly_weather_data[i],
-                         }
-                       for i, data  in enumerate(hourly_consumption_data)]
+        processed_hourly_data = [{'hour': data['heure'],
+                                  'lower': data['consoReg'],
+                                  'high': data['consoHaut'],
+                                  'total': data['consoTotal'],
+                                  'temp': hourly_weather_data[i]}
+                                 for i, data in enumerate(hourly_consumption_data)]
+
+        raw_hourly_data = {'Energy': hourly_consumption_data,
+                           'Power': hourly_power_data,
+                           'Weather': hourly_weather_data}
+        hourly_data = {'processed_hourly_data': processed_hourly_data,
+                       'raw_hourly_data': raw_hourly_data}
         return hourly_data
+
+    @asyncio.coroutine
+    def fetch_data_detailled_energy_use(self, contract, start_date, end_date):
+        """Get detailled energy use from a specific contract"""
+        # Get http session
+        yield from self._get_httpsession()
+        # Get login page
+        login_url = yield from self._get_login_page()
+        # Post login page
+        yield from self._post_login_page(login_url)
+        # Get p_p_id and contracts
+        p_p_id, contracts = yield from self._get_p_p_id_and_contract()
+        # If we don't have any contrats that means we have only
+        # onecontract. Let's get it
+        if contracts == {}:
+            contracts = yield from self._get_lonely_contract()
+        # For all contracts
+        for contract, contract_url in contracts.items():
+            if contract_url:
+                yield from self._load_contract_page(contract_url)
+
+            if(start_date is None):
+                start_date = datetime.date.today() - datetime.timedelta(days=1)
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+
+            data = {}
+            dates = [(start_date + datetime.timedelta(n))
+                     for n in range(int((end_date - start_date).days))]
+
+            for date in dates:
+                # Get Hourly data
+                day_date = date.strftime("%Y-%m-%d")
+                hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
+                data[day_date] = hourly_data['raw_hourly_data']
+
+            # Add contract
+            self._data[contract] = data
 
     @asyncio.coroutine
     def fetch_data(self):
@@ -370,6 +413,7 @@ class HydroQuebecClient(object):
             yesterday = datetime.date.today() - datetime.timedelta(days=1)
             day_date = yesterday.strftime("%Y-%m-%d")
             hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
+            hourly_data = hourly_data['processed_hourly_data']
 
             # Get Annual data
             try:
