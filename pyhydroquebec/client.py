@@ -336,7 +336,13 @@ class HydroQuebecClient(object):
             json_output = yield from raw_res.json(content_type='text/json')
         except (OSError, json.decoder.JSONDecodeError):
             raise PyHydroQuebecAnnualError("Could not get hourly data")
-        hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
+
+        hourly_weather_data = []
+        if len( json_output.get('results') ) <= 0:
+            #Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
+            hourly_weather_data = [None]*24
+        else:
+            hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
         # Add temp in data
         processed_hourly_data = [{'hour': data['heure'],
                                   'lower': data['consoReg'],
