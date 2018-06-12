@@ -9,11 +9,10 @@ import re
 
 import aiohttp
 from bs4 import BeautifulSoup
-
 from dateutil import tz
-#Always get the time using HydroQuebec Local Time
-hq_timezone = tz.gettz('America/Montreal')
 
+#Always get the time using HydroQuebec Local Time
+HQ_TIMEZONE = tz.gettz('America/Montreal')
 
 REQUESTS_TIMEOUT = 15
 
@@ -379,7 +378,7 @@ class HydroQuebecClient(object):
                 yield from self._load_contract_page(contract_url)
 
             if(start_date is None):
-                start_date = datetime.datetime.now(hq_timezone) - datetime.timedelta(days=1)
+                start_date = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
@@ -421,7 +420,7 @@ class HydroQuebecClient(object):
                 yield from self._load_contract_page(contract_url)
 
             # Get Hourly data
-            yesterday = datetime.datetime.now(hq_timezone) - datetime.timedelta(days=1)
+            yesterday = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
             day_date = yesterday.strftime("%Y-%m-%d")
             hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
             hourly_data = hourly_data['processed_hourly_data']

@@ -1,15 +1,11 @@
 import argparse
-import asyncio
-
-import datetime
-from dateutil import tz
-#Always get the time using HydroQuebec Local Time
-hq_timezone = tz.gettz('America/Montreal')
-
 import json
 import sys
+import datetime
 
-from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT
+from dateutil import tz
+
+from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 
 
 def _format_output(account, all_data, show_hourly=False):
@@ -113,7 +109,7 @@ def main():
     raw_group.add_argument('--start-date',
                            default=None, help='Start date for detailled-output')
     raw_group.add_argument('--end-date',
-                           default=datetime.datetime.now(hq_timezone).strftime("%Y-%m-%d"),
+                           default=datetime.datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
                            help="End date for detailled-output")
 
     args = parser.parse_args()
