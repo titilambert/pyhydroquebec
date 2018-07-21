@@ -165,7 +165,10 @@ def format_influx(data):
         for key in data[contract]:
             if i != 0:
                 out = out + ","
-            out += key + "=" + str(data[contract][key])
+            if key == "annual_date_start" or key == "annual_date_end":
+                out += key + "=\"" + str(data[contract][key]) +"\""
+            else:
+                out += key + "=" + str(data[contract][key])
             i += 1
 
         out += " " + str(int(datetime.datetime.now(HQ_TIMEZONE).timestamp() * 1000000000))
