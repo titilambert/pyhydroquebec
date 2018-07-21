@@ -6,7 +6,9 @@ import asyncio
 
 from dateutil import tz
 
-from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
+from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT
+
+HQ_TIMEZONE = tz.gettz('America/Montreal')
 
 
 def _format_output(account, all_data, show_hourly=False):
@@ -96,6 +98,8 @@ def main():
                         required=True, help='Password')
     parser.add_argument('-j', '--json', action='store_true',
                         default=False, help='Json output')
+    parser.add_argument('-i', '--influxdb', action='store_true',
+                        default=False, help='InfluxDb output')
     parser.add_argument('-c', '--contract',
                         default=None, help='Contract number')
     parser.add_argument('-l', '--list-contracts', action='store_true',
@@ -139,10 +143,55 @@ def main():
 
     if args.list_contracts:
         print("Contracts: {}".format(", ".join(client.get_contracts())))
+    elif args.influxdb:
+        format_influx(client.get_data(args.contract))
     elif args.json or args.detailled_energy:
         print(json.dumps(client.get_data(args.contract)))
     else:
         _format_output(args.username, client.get_data(args.contract), args.hourly)
+
+
+def format_influx(data):
+    for contract in data:
+
+        # Pop yesterdays data
+        yesterday_data = data[contract]['yesterday_hourly_consumption']
+        del data[contract]['yesterday_hourly_consumption']
+
+        # Print general data
+        out = "pyhydroquebec,contract=" + contract + " "
+
+        i = 0
+        for key in data[contract]:
+            if i != 0:
+                out = out + ","
+            out += key + "=" + str(data[contract][key])
+            i += 1
+
+        out += " " + str(int(datetime.datetime.now(HQ_TIMEZONE).timestamp() * 1000000000))
+        print(out)
+
+        # Print yesterday values
+        yesterday = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
+        yesterday = yesterday.replace(minute=0, hour=0, second=0, microsecond=0)
+
+        for hour in yesterday_data:
+            out = "pyhydroquebec,contract=" + contract + " "
+
+            t = datetime.datetime.strptime(hour['hour'], '%H:%M:%S')
+            del hour['hour']
+
+            i = 0
+            for key in hour:
+                if i != 0:
+                    out = out + ","
+                out += key + "=" + str(hour[key])
+                i += 1
+
+            yesterday = yesterday.replace(hour=t.hour)
+
+            out += " " + str(int(yesterday.timestamp() * 1000000000))
+            print(out)
 
 
 if __name__ == '__main__':
