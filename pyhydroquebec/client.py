@@ -14,7 +14,7 @@ from dateutil import tz
 #Always get the time using HydroQuebec Local Time
 HQ_TIMEZONE = tz.gettz('America/Montreal')
 
-REQUESTS_TIMEOUT = 15
+REQUESTS_TIMEOUT = 30
 
 HOST = "https://www.hydroquebec.com"
 HOME_URL = "{}/portail/web/clientele/authentification".format(HOST)
