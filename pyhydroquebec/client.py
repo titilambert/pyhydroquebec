@@ -413,6 +413,7 @@ class HydroQuebecClient(object):
 
         # Get balance
         balances = yield from self._get_balances()
+        balances_len = len(balances)
         balance_id = 0
         # For all contracts
         for contract, contract_url in contracts.items():
@@ -420,10 +421,14 @@ class HydroQuebecClient(object):
                 yield from self._load_contract_page(contract_url)
 
             # Get Hourly data
-            yesterday = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
-            day_date = yesterday.strftime("%Y-%m-%d")
-            hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
-            hourly_data = hourly_data['processed_hourly_data']
+            try:
+                yesterday = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
+                day_date = yesterday.strftime("%Y-%m-%d")
+                hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
+                hourly_data = hourly_data['processed_hourly_data']
+            except:
+                # We don't have hourly data for some reason
+                hourly_data = {}
 
             # Get Annual data
             try:
@@ -459,7 +464,9 @@ class HydroQuebecClient(object):
                 contract_data['yesterday_hourly_consumption'] = hourly_data
             # Add contract
             self._data[contract] = contract_data
-            balance_id += 1
+            balance_count = balance_id + 1
+            if balance_count < balances_len:
+                balance_id += 1
 
     def get_data(self, contract=None):
         """Return collected data."""
