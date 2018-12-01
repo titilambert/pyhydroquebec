@@ -5,8 +5,7 @@ PyHydroQuebec
 TODO
 ####
 
-* Add multi account support
-* Get the current account balance
+* Add automated tests
 
 Installation
 ############
