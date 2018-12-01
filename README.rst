@@ -59,5 +59,4 @@ Dev env
 
 ::
 
-    virtualenv -p /usr/bin/python3.5 env
-    pip install -r requirements.txt 
+    make env

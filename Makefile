@@ -1,3 +1,7 @@
+env:
+	python setup.py develop
+	virtualenv -p /usr/bin/python3.5 env
+	pip install -r requirements.txt
 
 upload:
-	 python setup.py sdist upload -r pypi
+	python setup.py sdist upload -r pypi
