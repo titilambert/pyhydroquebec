@@ -8,14 +8,16 @@ import asyncio
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.output import output_text, output_influx, output_json
 
+VERSION = "2.4.0"
+
 
 def main():
     """Entrypoint function."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username',
-                        required=True, help='Hydro Quebec username')
+                        help='Hydro Quebec username')
     parser.add_argument('-p', '--password',
-                        required=True, help='Password')
+                        help='Password')
     parser.add_argument('-j', '--json', action='store_true',
                         default=False, help='Json output')
     parser.add_argument('-i', '--influxdb', action='store_true',
@@ -28,6 +30,8 @@ def main():
                         default=False, help='Show yesterday hourly consumption')
     parser.add_argument('-t', '--timeout',
                         default=REQUESTS_TIMEOUT, help='Request timeout')
+    parser.add_argument('-V', '--version', action='store_true',
+                        default=False, help='Show version')
     raw_group = parser.add_argument_group('Detailled-energy raw download option')
     raw_group.add_argument('--detailled-energy', action='store_true',
                            default=False, help='Get raw json output download')
@@ -40,6 +44,16 @@ def main():
                            help="End date for detailled-output")
 
     args = parser.parse_args()
+
+    if args.version:
+        print(VERSION)
+        return 0
+
+    if not args.username or not args.password:
+        parser.print_usage()
+        print("pyhydroquebec: error: the following arguments are required: "
+              "-u/--username, -p/--password")
+        return 3
 
     client = HydroQuebecClient(args.username, args.password, args.timeout)
     loop = asyncio.get_event_loop()

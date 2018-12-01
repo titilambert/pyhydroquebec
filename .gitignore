@@ -7,4 +7,4 @@ dist/
 htmlcov/
 .pytest_cache/
 .tox/
-.coverage.*
+.coverage*

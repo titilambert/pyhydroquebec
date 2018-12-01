@@ -1,11 +1,11 @@
 env:
-	virtualenv -p /usr/bin/python3.5 env
-	pip install -r requirements.txt
-	pip install -r test_requirements.txt
-	python setup.py develop
+	virtualenv -p `which python3` env
+	env/bin/pip install -r requirements.txt
+	env/bin/pip install -r test_requirements.txt
+	env/bin/python setup.py develop
 
 upload:
-	python setup.py sdist upload -r pypi
+	env/bin/python setup.py sdist upload -r pypi
 
 test:
-	tox
+	env/bin/tox
