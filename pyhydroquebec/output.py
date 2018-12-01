@@ -1,13 +1,18 @@
+"""PyHydroQuebec Output Module.
+
+This module defines the different output functions:
+* text
+* influxdb
+* json
+"""
 import json
 import datetime
-
-from dateutil import tz
 
 from pyhydroquebec import HQ_TIMEZONE
 
 
 def output_text(account, all_data, show_hourly=False):
-    """Format data to get a readable output"""
+    """Format data to get a readable output."""
     print("""
 #################################
 # Hydro Quebec data for account #
@@ -66,7 +71,8 @@ Yesterday consumption details
    Hour  | Temperature | Lower price consumption | Higher price consumption | total comsumption
 """)
             for hdata in data['yesterday_hourly_consumption']:
-                msg += "{d[hour]} | {d[temp]:8d} °C | {d[lower]:19.2f} kWh | {d[high]:20.2f} kWh | {d[total]:.2f} kWh\n".format(d=hdata)
+                msg += ("{d[hour]} | {d[temp]:8d} °C | {d[lower]:19.2f} kWh | "
+                        "{d[high]:20.2f} kWh | {d[total]:.2f} kWh\n").format(d=hdata)
             print(msg)
 
         output3 = ("""
@@ -85,6 +91,7 @@ kWh price:              {d[annual_kwh_price_cent]} ¢
 
 
 def output_influx(data):
+    """Print data using influxDB format."""
     for contract in data:
 
         # Pop yesterdays data
@@ -94,15 +101,13 @@ def output_influx(data):
         # Print general data
         out = "pyhydroquebec,contract=" + contract + " "
 
-        i = 0
-        for key in data[contract]:
-            if i != 0:
+        for index, key in enumerate(data[contract]):
+            if index != 0:
                 out = out + ","
-            if key == "annual_date_start" or key == "annual_date_end":
-                out += key + "=\"" + str(data[contract][key]) +"\""
+            if key in ("annual_date_start", "annual_date_end"):
+                out += key + "=\"" + str(data[contract][key]) + "\""
             else:
                 out += key + "=" + str(data[contract][key])
-            i += 1
 
         out += " " + str(int(datetime.datetime.now(HQ_TIMEZONE).timestamp() * 1000000000))
         print(out)
@@ -112,23 +117,18 @@ def output_influx(data):
         yesterday = yesterday.replace(minute=0, hour=0, second=0, microsecond=0)
 
         for hour in yesterday_data:
-            out = "pyhydroquebec,contract=" + contract + " "
+            msg = "pyhydroquebec,contract={} {} {}"
 
-            t = datetime.datetime.strptime(hour['hour'], '%H:%M:%S')
-            del hour['hour']
+            data = ",".join(["{}={}".format(key, value) for key, value in hour.items()
+                             if key != 'hour'])
 
-            i = 0
-            for key in hour:
-                if i != 0:
-                    out = out + ","
-                out += key + "=" + str(hour[key])
-                i += 1
+            datatime = datetime.datetime.strptime(hour['hour'], '%H:%M:%S')
+            yesterday = yesterday.replace(hour=datatime.hour)
+            yesterday_str = str(int(yesterday.timestamp() * 1000000000))
 
-            yesterday = yesterday.replace(hour=t.hour)
-
-            out += " " + str(int(yesterday.timestamp() * 1000000000))
-            print(out)
+            print(msg.format(contract, data, yesterday_str))
 
 
 def output_json(data):
+    """Print data as Json."""
     print(json.dumps(data))

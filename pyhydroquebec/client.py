@@ -1,17 +1,14 @@
-"""
-PyHydroQuebec
-"""
+"""PyHydroQuebec Client Module."""
 import asyncio
 import datetime
 import json
-import logging
 import re
 
 import aiohttp
 from bs4 import BeautifulSoup
 from dateutil import tz
 
-#Always get the time using HydroQuebec Local Time
+# Always get the time using HydroQuebec Local Time
 HQ_TIMEZONE = tz.gettz('America/Montreal')
 
 REQUESTS_TIMEOUT = 30
@@ -46,14 +43,15 @@ ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
 
 
 class PyHydroQuebecError(Exception):
-    pass
+    """Base PyHydroQuebec Error."""
 
 
 class PyHydroQuebecAnnualError(PyHydroQuebecError):
-    pass
+    """Annual PyHydroQuebec Error."""
 
 
-class HydroQuebecClient(object):
+class HydroQuebecClient():
+    """PyHydroQuebec HTTP Client."""
 
     def __init__(self, username, password, timeout=REQUESTS_TIMEOUT,
                  session=None):
@@ -127,7 +125,7 @@ class HydroQuebecClient(object):
                 contracts[rematch.group(1).replace(" ", "")] = None
         # search for links
         for node in soup.find_all('a', {"class": "big iconLink"}):
-            for contract in contracts.keys():
+            for contract in contracts:
                 if contract in node.attrs.get('href'):
                     contracts[contract] = node.attrs.get('href')
         # Looking for p_p_id
@@ -169,7 +167,7 @@ class HydroQuebecClient(object):
 
     @asyncio.coroutine
     def _get_balances(self):
-        """Get all balances
+        """Get all balances.
 
         .. todo::
 
@@ -202,12 +200,10 @@ class HydroQuebecClient(object):
 
     @asyncio.coroutine
     def _load_contract_page(self, contract_url):
-        """Load the profile page of a specific contract when we have
-        multiple contracts.
-        """
+        """Load the profile page of a specific contract when we have multiple contracts."""
         try:
-            raw_res = yield from self._session.get(contract_url,
-                                                   timeout=self._timeout)
+            yield from self._session.get(contract_url,
+                                         timeout=self._timeout)
         except OSError:
             raise PyHydroQuebecError("Can not get profile page for a "
                                      "specific contract")
@@ -234,7 +230,7 @@ class HydroQuebecClient(object):
         if not json_output.get('success'):
             raise PyHydroQuebecAnnualError("Could not get annual data")
 
-        if len(json_output.get('results')) < 1:
+        if not json_output.get('results'):
             raise PyHydroQuebecAnnualError("Could not get annual data")
 
         if 'courant' not in json_output.get('results')[0]:
@@ -292,6 +288,7 @@ class HydroQuebecClient(object):
 
     @asyncio.coroutine
     def _get_hourly_data(self, day_date, p_p_id):
+        """Get Hourly Data."""
         params = {"p_p_id": p_p_id,
                   "p_p_lifecycle": 2,
                   "p_p_state": "normal",
@@ -337,8 +334,8 @@ class HydroQuebecClient(object):
             raise PyHydroQuebecAnnualError("Could not get hourly data")
 
         hourly_weather_data = []
-        if len( json_output.get('results') ) <= 0:
-            #Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
+        if not json_output.get('results'):
+            # Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
             hourly_weather_data = [None]*24
         else:
             hourly_weather_data = json_output['results'][0]['listeTemperaturesHeure']
@@ -358,8 +355,12 @@ class HydroQuebecClient(object):
         return hourly_data
 
     @asyncio.coroutine
-    def fetch_data_detailled_energy_use(self, contract, start_date, end_date):
-        """Get detailled energy use from a specific contract"""
+    def fetch_data_detailled_energy_use(self, start_date=None, end_date=None):
+        """Get detailled energy use from a specific contract."""
+        if start_date is None:
+            start_date = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
+        if end_date is None:
+            end_date = datetime.datetime.now(HQ_TIMEZONE)
         # Get http session
         yield from self._get_httpsession()
         # Get login page
@@ -376,11 +377,6 @@ class HydroQuebecClient(object):
         for contract, contract_url in contracts.items():
             if contract_url:
                 yield from self._load_contract_page(contract_url)
-
-            if(start_date is None):
-                start_date = datetime.datetime.now(HQ_TIMEZONE) - datetime.timedelta(days=1)
-            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
             data = {}
             dates = [(start_date + datetime.timedelta(n))
@@ -426,7 +422,7 @@ class HydroQuebecClient(object):
                 day_date = yesterday.strftime("%Y-%m-%d")
                 hourly_data = yield from self._get_hourly_data(day_date, p_p_id)
                 hourly_data = hourly_data['processed_hourly_data']
-            except:
+            except Exception:  # pylint: disable=W0703
                 # We don't have hourly data for some reason
                 hourly_data = {}
 
@@ -443,10 +439,13 @@ class HydroQuebecClient(object):
             # Get daily data
             start_date = monthly_data.get('dateDebutPeriode')
             end_date = monthly_data.get('dateFinPeriode')
-            daily_data = yield from self._get_daily_data(p_p_id, start_date, end_date)
+            try:
+                daily_data = yield from self._get_daily_data(p_p_id, start_date, end_date)
+            except Exception:  # pylint: disable=W0703
+                daily_data = []
             # We have to test daily_data because it's empty
             # At the end/starts of a period
-            if len(daily_data) > 0:
+            if daily_data:
                 daily_data = daily_data[0]['courant']
             # format data
             contract_data = {"balance": balances[balance_id]}
@@ -472,10 +471,9 @@ class HydroQuebecClient(object):
         """Return collected data."""
         if contract is None:
             return self._data
-        elif contract in self._data.keys():
+        if contract in self._data.keys():
             return {contract: self._data[contract]}
-        else:
-            raise PyHydroQuebecError("Contract {} not found".format(contract))
+        raise PyHydroQuebecError("Contract {} not found".format(contract))
 
     def get_contracts(self):
         """Return Contract list."""

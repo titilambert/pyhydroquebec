@@ -60,3 +60,17 @@ Dev env
 ::
 
     make env
+
+
+Run test
+########
+
+::
+
+    make test
+
+Or
+
+::
+
+    tox

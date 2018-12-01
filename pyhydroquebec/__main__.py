@@ -1,17 +1,16 @@
+"""PyHydroQuebec Entrypoint Module."""
+
 import argparse
-import json
 import sys
 import datetime
 import asyncio
-
-from dateutil import tz
 
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.output import output_text, output_influx, output_json
 
 
 def main():
-    """Main function"""
+    """Entrypoint function."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username',
                         required=True, help='Hydro Quebec username')
@@ -33,7 +32,9 @@ def main():
     raw_group.add_argument('--detailled-energy', action='store_true',
                            default=False, help='Get raw json output download')
     raw_group.add_argument('--start-date',
-                           default=None, help='Start date for detailled-output')
+                           default=(datetime.datetime.now(HQ_TIMEZONE) -
+                                    datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+                           help='Start date for detailled-output')
     raw_group.add_argument('--end-date',
                            default=datetime.datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
                            help="End date for detailled-output")
@@ -46,9 +47,10 @@ def main():
     if args.detailled_energy is False:
         async_func = client.fetch_data()
     else:
-        async_func = client.fetch_data_detailled_energy_use(args.contract,
-                                                            args.start_date,
-                                                            args.end_date)
+        start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
+        async_func = client.fetch_data_detailled_energy_use(start_date,
+                                                            end_date)
     try:
         fut = asyncio.wait([async_func])
         loop.run_until_complete(fut)
@@ -70,6 +72,7 @@ def main():
         output_json(client.get_data(args.contract))
     else:
         output_text(args.username, client.get_data(args.contract), args.hourly)
+    return 0
 
 
 if __name__ == '__main__':
