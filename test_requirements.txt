@@ -1,0 +1,7 @@
+tox
+pydocstyle
+flake8
+pylint
+pytest==3.7.1
+pytest-cov==2.5.1
+pytest-timeout==1.3.1

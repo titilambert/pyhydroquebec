@@ -5,8 +5,7 @@ PyHydroQuebec
 TODO
 ####
 
-* Add multi account support
-* Get the current account balance
+* Add automated tests
 
 Installation
 ############
@@ -59,5 +58,18 @@ Dev env
 
 ::
 
-    virtualenv -p /usr/bin/python3.5 env
-    pip install -r requirements.txt 
+    make env
+
+
+Run test
+########
+
+::
+
+    make test
+
+Or
+
+::
+
+    tox
