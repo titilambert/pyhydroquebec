@@ -4,3 +4,7 @@ env/
 __pycache__/
 pyhydroquebec.egg-info/
 dist/
+htmlcov/
+.pytest_cache/
+.tox/
+.coverage*
