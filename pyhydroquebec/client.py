@@ -378,6 +378,9 @@ class HydroQuebecClient():
             if contract_url:
                 yield from self._load_contract_page(contract_url)
 
+            #Get the periods data
+            periods_data = yield from self._get_monthly_data(p_p_id)
+
             data = {}
             dates = [(start_date + datetime.timedelta(n))
                      for n in range(int((end_date - start_date).days))]
@@ -389,7 +392,9 @@ class HydroQuebecClient():
                 data[day_date] = hourly_data['raw_hourly_data']
 
             # Add contract
-            self._data[contract] = data
+            self._data[contract] = {}
+            self._data[contract]['rawPoints'] = data
+            self._data[contract]['rawPeriods'] = periods_data
 
     @asyncio.coroutine
     def fetch_data(self):
