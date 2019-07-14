@@ -9,6 +9,6 @@ COPY . .
 
 RUN ["chmod", "+x", "./entrypoint.sh"]
 
-RUN python setup.py develop
+RUN python setup.py install
 
 CMD [ "./entrypoint.sh" ]
