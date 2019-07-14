@@ -1,6 +1,5 @@
 FROM python:3.6-alpine
 
-
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
@@ -10,4 +9,4 @@ COPY . .
 
 RUN python setup.py develop
 
-CMD [ "pyhydroquebec" ]
+CMD [ "./entrypoint.sh" ]

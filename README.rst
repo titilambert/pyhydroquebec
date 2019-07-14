@@ -53,6 +53,36 @@ Print help
       -t TIMEOUT, --timeout TIMEOUT
                             Request timeout
 
+
+
+Docker
+######
+
+::
+
+    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** ncareau/pyhydroquebec
+
+Docker variables
+"""""""""
+
+    **PYHQ_USER** - Required
+        `-e PYHQ_USER=myusername`
+    
+    **PYHQ_PASSWORD** - Required
+        `-e PYHQ_PASSWORD=mypassword`    
+    
+    **PYHQ_OUTPUT**
+
+    - `-e PYHQ_OUTPUT=TEXT` - Default
+    - `-e PYHQ_OUTPUT=JSON`
+    - `-e PYHQ_OUTPUT=INFLUXDB`
+    - `-e PYHQ_OUTPUT=CONTRACT`
+        
+    **PYHQ_CONTRACT**
+
+        `-e PYHQ_CONTRACT=332211223`
+
+
 Dev env
 #######
 
