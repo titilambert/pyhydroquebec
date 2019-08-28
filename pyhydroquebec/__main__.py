@@ -5,11 +5,10 @@ import sys
 import datetime
 import asyncio
 
+
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.output import output_text, output_influx, output_json
-
-VERSION = "2.4.0"
-
+from version import VERSION
 
 def main():
     """Entrypoint function."""
