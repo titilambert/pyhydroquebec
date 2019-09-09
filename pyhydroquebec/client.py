@@ -32,6 +32,10 @@ DAILY_MAP = (('yesterday_total_consumption', 'consoTotalQuot'),
              ('yesterday_lower_price_consumption', 'consoRegQuot'),
              ('yesterday_higher_price_consumption', 'consoHautQuot'),
              ('yesterday_average_temperature', 'tempMoyenneQuot'))
+DAILY_COMPARE_MAP = (('yesterday_compare_total_consumption', 'consoTotalQuot'),
+             ('yesterday_compare_lower_price_consumption', 'consoRegQuot'),
+             ('yesterday_compare_higher_price_consumption', 'consoHautQuot'),
+             ('yesterday_compare_average_temperature', 'tempMoyenneQuot'))
 ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
               ('annual_total_consumption', 'consoTotalAnnee'),
               ('annual_total_bill', 'montantFactureAnnee'),
@@ -447,6 +451,7 @@ class HydroQuebecClient():
             # At the end/starts of a period
             if daily_data:
                 daily_data = daily_data[0]['courant']
+                daily_data_compare = daily_data[0]['compare']
             # format data
             contract_data = {"balance": balances[balance_id]}
             for key1, key2 in MONTHLY_MAP:
@@ -458,6 +463,9 @@ class HydroQuebecClient():
             if daily_data:
                 for key1, key2 in DAILY_MAP:
                     contract_data[key1] = daily_data[key2]
+            if daily_data_compare:
+                for key1, key2 in DAILY_COMPARE_MAP:
+                    contract_data[key1] = daily_data_compare[key2]
             # Hourly
             if hourly_data:
                 contract_data['yesterday_hourly_consumption'] = hourly_data

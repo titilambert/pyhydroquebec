@@ -45,7 +45,10 @@ def test_influx_output(capsys):
                                                  'temp': 0,
                                                  'total': 1.62}],
                'yesterday_lower_price_consumption': 55.23,
-               'yesterday_total_consumption': 55.23}}
+               'yesterday_total_consumption': 55.23,
+               'yesterday_compare_total_consumption': 56.24,
+               'yesterday_compare_lower_price_consumption': 56.24,
+               'yesterday_compare_higher_price_consumption': 0.24}}
 
     expected = (r'''pyhydroquebec,contract=310277835 annual_date_end="2018-11-28",'''
                 r'''annual_date_start="2017-11-25",annual_kwh_price_cent=8.94,'''
@@ -57,7 +60,9 @@ def test_influx_output(capsys):
                 r'''period_mean_daily_consumption=59.0,period_projection=537.21,'''
                 r'''period_total_bill=10.65,period_total_consumption=118,period_total_days=65,'''
                 r'''yesterday_average_temperature=-1,yesterday_higher_price_consumption=0,'''
-                r'''yesterday_lower_price_consumption=55.23,yesterday_total_consumption=55.23'''
+                r'''yesterday_lower_price_consumption=55.23,yesterday_total_consumption=55.23,'''
+                r'''yesterday_compare_average_temperature=-2,yesterday_compare_higher_price_consumption=0.24,'''
+                r'''yesterday_compare_lower_price_consumption=56.24,yesterday_compare_total_consumption=56.24'''
                 r''' \d*\n'''
                 r'''pyhydroquebec,contract=310277835 high=0,lower=0.97,temp=0,total=0.97'''
                 r''' \d*\n'''

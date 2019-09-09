@@ -63,6 +63,14 @@ Temperature:            {d[yesterday_average_temperature]:d} °C
 Lower price:            {d[yesterday_lower_price_consumption]:.2f} kWh
 Higher price:           {d[yesterday_higher_price_consumption]:.2f} kWh
 Total:                  {d[yesterday_total_consumption]:.2f} kWh""")
+        if data.get("yesterday_compare_average_temperature") is not None:
+            output3 = ("""
+Yesterday consumption
+=====================
+Temperature:            {d[yesterday_compare_average_temperature]:d} °C
+Lower price:            {d[yesterday_compare_lower_price_consumption]:.2f} kWh
+Higher price:           {d[yesterday_compare_higher_price_consumption]:.2f} kWh
+Total:                  {d[yesterday_compare_total_consumption]:.2f} kWh""")
             print(output3.format(d=data))
         if show_hourly:
             msg = ("""
