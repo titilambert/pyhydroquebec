@@ -450,8 +450,8 @@ class HydroQuebecClient():
             # We have to test daily_data because it's empty
             # At the end/starts of a period
             if daily_data:
-                daily_data = daily_data[0]['courant']
                 daily_data_compare = daily_data[0]['compare']
+                daily_data = daily_data[0]['courant']
             # format data
             contract_data = {"balance": balances[balance_id]}
             for key1, key2 in MONTHLY_MAP:
