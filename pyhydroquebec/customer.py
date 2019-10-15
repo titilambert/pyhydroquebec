@@ -39,12 +39,15 @@ class Customer():
         content = await res.text()
         soup = BeautifulSoup(content, 'html.parser')
         raw_balance = soup.find('p', {'class': 'solde'}).text
-        self._balance = float(raw_balance[:-2].replace(",", ".").replace("\xa0", ""))
+        self._balance = float(raw_balance[:-2].replace(",", ".").
+                              replace("\xa0", ""))
 
         raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        self.contract_id = raw_contract_id.split("Contrat", 1)[-1].replace("\t", "").replace("\n", "")     
+        self.contract_id = raw_contract_id.split("Contrat", 1)[-1].\
+                            replace("\t", "").replace("\n", "")
 
-        # Needs to load the consumption profile page to not break the next loading of the other pages
+        # Needs to load the consumption profile page to not break
+        # the next loading of the other pages
         await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
 
     @property
@@ -88,11 +91,11 @@ class Customer():
 
     @property
     def current_annual_data(self):
-        return self._current_annual_data 
+        return self._current_annual_data
 
     @property
     def compare_annual_data(self):
-        return self._compare_annual_data 
+        return self._compare_annual_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_monthly_data(self):
@@ -117,11 +120,11 @@ class Customer():
 
     @property
     def current_monthly_data(self):
-        return self._current_monthly_data 
+        return self._current_monthly_data
 
     @property
     def compare_monthly_data(self):
-        return self._compare_monthly_data 
+        return self._compare_monthly_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_daily_data(self, start_date=None, end_date=None):
@@ -181,7 +184,7 @@ class Customer():
 
     @property
     def compare_daily_data(self):
-        return self._compare_daily_data 
+        return self._compare_daily_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_hourly_data(self, day=None):
