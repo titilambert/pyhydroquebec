@@ -1,0 +1,9 @@
+# THIS YAML CAN CHANGE IN THE FUTURE
+timeout: 30
+accounts:
+- username: USERNAME@EMAIL
+  password: PASSWORD
+  contracts:
+    - id: CONTRACT_ID
+      data:
+      - balance

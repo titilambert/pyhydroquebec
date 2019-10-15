@@ -58,6 +58,22 @@ Print help
         --end-date END_DATE                 End date for detailled-output
 
 
+MQTT DAEMON
+###########
+
+NOT WORKING FOR NOW
+
+::
+
+   cp config.yaml.sample config.yaml
+
+Edit config.yaml
+
+::
+
+    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml mqtt_pyhydroquebec
+
+
 
 Docker
 ######
