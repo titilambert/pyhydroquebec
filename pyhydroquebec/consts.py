@@ -124,14 +124,14 @@ Yesterday consumption details
 """)
 
 ANNUAL_TPL = ("""
-    Annual Total
-    ============
+Annual Total
+============
 
-    Start date:             {d[annual_date_start]}
-    End date:               {d[annual_date_end]}
-    Total bill:             {d[annual_total_bill]} $
-    Mean daily bill:        {d[annual_mean_daily_bill]} $
-    Total consumption:      {d[annual_total_consumption]} kWh
-    Mean dailyconsumption:  {d[annual_mean_daily_consumption]} kWh
-    kWh price:              {d[annual_kwh_price_cent]} ¢
+Start date:             {d[annual_date_start]}
+End date:               {d[annual_date_end]}
+Total bill:             {d[annual_total_bill]} $
+Mean daily bill:        {d[annual_mean_daily_bill]} $
+Total consumption:      {d[annual_total_consumption]} kWh
+Mean dailyconsumption:  {d[annual_mean_daily_consumption]} kWh
+kWh price:              {d[annual_kwh_price_cent]} ¢
 """)
