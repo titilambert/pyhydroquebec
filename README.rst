@@ -2,6 +2,8 @@
 PyHydroQuebec
 #############
 
+**Important**: This library is currently not in working condition since the new Hydro Quebec website came in production (Around 2019-10-08). The new website uses a new authentication mechanism that needs more development. 
+
 TODO
 ####
 
