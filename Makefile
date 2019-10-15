@@ -6,6 +6,3 @@ env:
 
 upload:
 	env/bin/python setup.py sdist upload -r pypi
-
-test:
-	env/bin/tox

@@ -116,10 +116,4 @@ Run test
 
 ::
 
-    make test
-
-Or
-
-::
-
-    tox
+    USERNAME=myhydrousername PASSWORD=myhydropassword tox
