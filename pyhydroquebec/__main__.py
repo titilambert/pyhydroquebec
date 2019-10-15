@@ -1,9 +1,10 @@
 """PyHydroQuebec Entrypoint Module."""
 
 import argparse
-import sys
-import datetime
 import asyncio
+import datetime
+from pprint import pprint
+import sys
 
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.outputter import output_text, output_influx, output_json
@@ -17,12 +18,17 @@ async def fetch_data(client, contract_id):
         if customer.contract_id != contract_id:
             continue
         await customer.fetch_current_period()
+        await customer.fetch_annual_data()
+        await customer.fetch_monthly_data()
         return customer
         #await customer.fetch_hourly_data("2019-10-12")
-        #await customer.fetch_annual_data()
-        #await customer.fetch_daily_data()
-        #await customer.fetch_monthly_data()
-        #await customer.fetch_hourly_data()
+
+async def dump_data(client, contract_id):
+    customer = await fetch_data(client, contract_id)
+    await customer.fetch_daily_data()
+    await customer.fetch_hourly_data()
+    return customer
+
 
 async def list_contracts(client):
     await client.login()
@@ -33,8 +39,8 @@ async def list_contracts(client):
 
 
 async def fetch_data_detailled_energy_use(client, start_date, end_date):
-    pass
     # TODO
+    raise Exception("FIXME")
 
 def main():
     """Entrypoint function."""
@@ -53,6 +59,8 @@ def main():
                         default=False, help='List all your contracts')
     parser.add_argument('-H', '--hourly', action='store_true',
                         default=False, help='Show yesterday hourly consumption')
+    parser.add_argument('-D', '--dump-data', action='store_true',
+                        default=False, help='Show contract python object as dict')
     parser.add_argument('-t', '--timeout',
                         default=REQUESTS_TIMEOUT, help='Request timeout')
     parser.add_argument('-V', '--version', action='store_true',
@@ -83,8 +91,11 @@ def main():
     client = HydroQuebecClient(args.username, args.password, args.timeout)
     loop = asyncio.get_event_loop()
 
+    # Get the async_func
     if args.list_contracts:
         async_func = list_contracts(client)
+    elif args.dump_data:
+        async_func = dump_data(client, args.contract)
     elif args.detailled_energy is False:
         async_func = fetch_data(client, args.contract)
     else:
@@ -92,6 +103,8 @@ def main():
         start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
         async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
+
+    # Fetch data
     try:
         results = loop.run_until_complete(asyncio.gather(async_func))
     except BaseException as exp:
@@ -101,9 +114,12 @@ def main():
         close_fut = asyncio.wait([client.close_session()])
         loop.run_until_complete(close_fut)
 
+    # Output data
     if args.list_contracts:
         for customer in results[0]:
             print("Contract: {contract_id}\n\tAccount: {account_id}\n\tCustomer: {customer_id}".format(**customer)) 
+    elif args.dump_data:
+        pprint(results[0].__dict__)
     elif args.influxdb:
         output_influx(results[0])
     elif args.json or args.detailled_energy:
