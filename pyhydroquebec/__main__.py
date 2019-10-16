@@ -13,6 +13,7 @@ from version import VERSION
 
 
 async def fetch_data(client, contract_id):
+    """Fetch data for basic report."""
     await client.login()
     for customer in client.customers:
         if customer.contract_id != contract_id:
@@ -24,6 +25,7 @@ async def fetch_data(client, contract_id):
         #await customer.fetch_hourly_data("2019-10-12")
 
 async def dump_data(client, contract_id):
+    """Fetch all data and dump them for debug and dev."""
     customer = await fetch_data(client, contract_id)
     await customer.fetch_daily_data()
     await customer.fetch_hourly_data()
@@ -31,14 +33,16 @@ async def dump_data(client, contract_id):
 
 
 async def list_contracts(client):
+    """Return the list of the contracts for a given account."""
     await client.login()
-    return [{"account_id": c.account_id, 
+    return [{"account_id": c.account_id,
              "customer_id": c.customer_id,
              "contract_id": c.contract_id}
             for c in client.customers]
 
 
 async def fetch_data_detailled_energy_use(client, start_date, end_date):
+    """Fetch hourly data for a given period."""
     # TODO
     raise Exception("FIXME")
 
@@ -99,7 +103,6 @@ def main():
     elif args.detailled_energy is False:
         async_func = fetch_data(client, args.contract)
     else:
-        raise Exception("FIXME")
         start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
         async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
@@ -117,7 +120,9 @@ def main():
     # Output data
     if args.list_contracts:
         for customer in results[0]:
-            print("Contract: {contract_id}\n\tAccount: {account_id}\n\tCustomer: {customer_id}".format(**customer)) 
+            print("Contract: {contract_id}\n\t"
+                  "Account: {account_id}\n\t"
+                  "Customer: {customer_id}".format(**customer))
     elif args.dump_data:
         pprint(results[0].__dict__)
     elif args.influxdb:

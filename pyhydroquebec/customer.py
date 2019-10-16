@@ -1,19 +1,27 @@
 """PyHydroQuebec Client Module."""
 from datetime import datetime, timedelta
 import json
-import re
 
-import aiohttp
 from bs4 import BeautifulSoup
 import cachetools
 
-
-
-from pyhydroquebec.consts import *
-from pyhydroquebec.error import PyHydroQuebecError, PyHydroQuebecAnnualError
+from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
+                                  CONTRACT_CURRENT_URL_2, CONTRACT_URL_3,
+                                  DAILY_DATA_URL, HOURLY_DATA_URL_1,
+                                  HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
+                                  REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
+                                  ANNUAL_MAP, CURRENT_MAP,
+                                  )
+#from pyhydroquebec.error import PyHydroQuebecError
 
 
 class Customer():
+    """Represents a HydroQuebec account
+
+    The account_id is called 'noPartenaireDemandeur' in the HydroQuebec API
+    The customer_id is called 'Customer number' in the HydroQuebec 'My accounts' UI
+    The contract_id is called 'Contract' in the HydroQuebec 'At a glance' UI
+    """
 
     def __init__(self, client, account_id, customer_id, timeout):
         self._client = client
@@ -33,6 +41,10 @@ class Customer():
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_summary(self):
+        """Fetch data from overview page
+
+        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/gerer-mon-compte
+        """
         await self._client.select_customer(self.account_id, self.customer_id)
 
         res = await self._client.http_request(CONTRACT_URL_3, "get")
@@ -52,18 +64,23 @@ class Customer():
 
     @property
     def balance(self):
+        """Return the collected balance."""
         return self._balance
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_current_period(self):
+        """Fetch data of the current period
+
+        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
+        """
         await self._client.select_customer(self.account_id, self.customer_id)
 
         await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
 
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
-        # We can not use res.json()
         text_res = await res.text()
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(text_res)['results'][0]
 
         self._current_period = {}
@@ -72,14 +89,20 @@ class Customer():
 
     @property
     def current_period(self):
+        """Return collected current period data."""
         return self._current_period
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_annual_data(self):
+        """Fetch data of the current and last year.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirDonneesConsommationAnnuelles
+        """
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(ANNUAL_DATA_URL, "get", headers=headers)
-        # We can not use res.json()
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
         if not json_res.get('results'):
             return
@@ -91,18 +114,26 @@ class Customer():
 
     @property
     def current_annual_data(self):
+        """Return collected current year data."""
         return self._current_annual_data
 
     @property
     def compare_annual_data(self):
+        """Return collected previous year data."""
         return self._compare_annual_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_monthly_data(self):
+        """Fetch data of the current and last year.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirDonneesConsommationMensuelles
+        """
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(MONTHLY_DATA_URL, "get", headers=headers)
         text_res = await res.text()
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(text_res)
         if not json_res.get('results'):
             return
@@ -120,14 +151,21 @@ class Customer():
 
     @property
     def current_monthly_data(self):
+        """Return collected monthly data of the current year."""
         return self._current_monthly_data
 
     @property
     def compare_monthly_data(self):
+        """Return collected monthly data of the previous year."""
         return self._compare_monthly_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_daily_data(self, start_date=None, end_date=None):
+        """Fetch data of the current and last year.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirDonneesQuotidiennesConsommation
+        """
         await self._client.select_customer(self.account_id, self.customer_id)
         if start_date is None:
             # Get yesterday
@@ -163,6 +201,7 @@ class Customer():
         res = await self._client.http_request(DAILY_DATA_URL, "get",
                                               params=params, headers=headers)
         text_res = await res.text()
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(text_res)
         if not json_res.get('results'):
             return
@@ -180,14 +219,22 @@ class Customer():
 
     @property
     def current_daily_data(self):
+        """Return collected daily data of the current year."""
         return self._current_daily_data
 
     @property
     def compare_daily_data(self):
+        """Return collected daily data of the previous year."""
         return self._compare_daily_data
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_hourly_data(self, day=None):
+        """Fetch data of the current and last year.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirDonneesConsommationHoraires
+        """
+        await self._client.select_customer(self.account_id, self.customer_id)
         await self._client.select_customer(self.account_id, self.customer_id)
 
         if day is None:
@@ -207,26 +254,31 @@ class Customer():
         params = {"dateDebut": day_str, "dateFin": day_str}
         res = await self._client.http_request(HOURLY_DATA_URL_2, "get",
                                               params=params, )
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
 
         self._hourly_data[day_str] = {
                 'day_mean_temp': json_res['results'][0]['tempMoyJour'],
                 'day_min_temp': json_res['results'][0]['tempMinJour'],
                 'day_max_temp': json_res['results'][0]['tempMaxJour'],
-                'hours': dict((h, {}) for h in range(24))
+                'hours': {},
                 }
+        tmp_hour_dict = dict((h, {}) for h in range(24))
         for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
-            self._hourly_data[day_str]['hours'][hour]['average_temperature'] = temp
+            tmp_hour_dict[hour]['average_temperature'] = temp
 
 
         params = {"date": day_str}
         res = await self._client.http_request(HOURLY_DATA_URL_1, "get", params=params)
+        # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
         for hour, data in enumerate(json_res['results']['listeDonneesConsoEnergieHoraire']):
-            self._hourly_data[day_str]['hours'][hour]['lower_price_consumption'] = data['consoReg']
-            self._hourly_data[day_str]['hours'][hour]['higher_price_consumption'] = data['consoHaut']
-            self._hourly_data[day_str]['hours'][hour]['total_consumption'] = data['consoTotal']
+            tmp_hour_dict[hour]['lower_price_consumption'] = data['consoReg']
+            tmp_hour_dict[hour]['higher_price_consumption'] = data['consoHaut']
+            tmp_hour_dict[hour]['total_consumption'] = data['consoTotal']
+        self._hourly_data[day_str]['hours'] = tmp_hour_dict.copy()
 
     @property
     def hourly_data(self):
+        """Return collected hourly data."""
         return self._hourly_data

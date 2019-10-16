@@ -1,19 +1,17 @@
 """PyHydroQuebec Client Module."""
 import uuid
-import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 import string
-import re
 from json import dumps as json_dumps
 
 import aiohttp
-from bs4 import BeautifulSoup
-from dateutil import tz
 
 from pyhydroquebec.customer import Customer
-from pyhydroquebec.error import PyHydroQuebecAnnualError, PyHydroQuebecError
-from pyhydroquebec.consts import *
+from pyhydroquebec.error import PyHydroQuebecHTTPError, PyHydroQuebecError
+from pyhydroquebec.consts import (REQUESTS_TIMEOUT, CONTRACT_URL_1, CONTRACT_URL_2,
+                                  CONTRACT_URL_3, CONTRACT_CURRENT_URL_1, LOGIN_URL_3,
+                                  LOGIN_URL_4, LOGIN_URL_5, LOGIN_URL_6, LOGIN_URL_7)
 
 
 class HydroQuebecClient():
@@ -32,10 +30,12 @@ class HydroQuebecClient():
         self.cookies = {}
         self._selected_customer = None
 
-    async def http_request(self, url, method, params=None, data=None, headers=None, ssl=True, cookies=None):
+    async def http_request(self, url, method, params=None, data=None,
+                           headers=None, ssl=True, cookies=None, status=200):
+        """Wrapper function making an HTTP request."""
         site = url.split("/")[2]
         if params is None:
-            params ={}
+            params = {}
         if data is None:
             data = {}
         if headers is None:
@@ -52,6 +52,8 @@ class HydroQuebecClient():
                 ssl=ssl,
                 cookies=cookies,
                 headers=headers)
+        if raw_res.status != status:
+            raise PyHydroQuebecHTTPError("Error Fetching {}".format(url))
 
         for cookie, cookie_content in raw_res.cookies.items():
             if hasattr(cookie_content, 'value'):
@@ -60,18 +62,21 @@ class HydroQuebecClient():
                 self.cookies[site][cookie] = cookie_content
 
         return raw_res
- 
+
     async def select_customer(self, account_id, customer_id, force=False):
+        """Select a customer on the Home page.
+
+        Equivalent to click on the customer box on the Home page.
+        """
         if self._selected_customer == customer_id and not force:
             return
 
         if force and "cl-ec-spring.hydroquebec.com" in self.cookies:
-            del(self.cookies["cl-ec-spring.hydroquebec.com"])
+            del self.cookies["cl-ec-spring.hydroquebec.com"]
 
         customers = [c for c in self._customers if c.customer_id == customer_id]
         if not customers:
-            raise
-        customer = customers[0]
+            raise PyHydroQuebecError("Customer ID {} not found.".format(customer_id))
 
         headers = {
             "Content-Type": "application/json",
@@ -99,6 +104,7 @@ class HydroQuebecClient():
 
     @property
     def selected_customer(self):
+        """Return the current selected customer."""
         return self._selected_customer
 
     def _get_httpsession(self):
@@ -113,16 +119,16 @@ class HydroQuebecClient():
         """
         # Get http session
         self._get_httpsession()
-        
+
         # Get the callback template
-        headers={"Content-Type": "application/json",
-                 "X-NoSession": "true",
-                 "X-Password": "anonymous",
-                 "X-Requested-With": "XMLHttpRequest",
-                 "X-Username": "anonymous"}
+        headers = {"Content-Type": "application/json",
+                   "X-NoSession": "true",
+                   "X-Password": "anonymous",
+                   "X-Requested-With": "XMLHttpRequest",
+                   "X-Username": "anonymous"}
         res = await self.http_request(LOGIN_URL_3, "post", headers=headers)
         data = await res.json()
-        
+
         # Fill the callback template
         data['callbacks'][0]['input'][0]['value'] = self.username
         data['callbacks'][1]['input'][0]['value'] = self.password
@@ -151,7 +157,7 @@ class HydroQuebecClient():
         # TODO find where this setting comes from
         response_type = "id_token token"
 
-        # Get bearer token 
+        # Get bearer token
         params = {
                 "response_type": response_type,
                 "client_id": client_id,
@@ -161,7 +167,7 @@ class HydroQuebecClient():
                 "nonce": nonce,
                 "locale": "en"
                 }
-        res = await self.http_request(LOGIN_URL_5, "get", params=params)
+        res = await self.http_request(LOGIN_URL_5, "get", params=params, status=302)
 
         # Go to Callback URL
         callback_url = res.headers['Location']
@@ -175,11 +181,10 @@ class HydroQuebecClient():
             print("Access token not found")
             return
 
-        self.access_token = callback_params['access_token'] 
+        self.access_token = callback_params['access_token']
 
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + self.access_token,
-        }
+        headers = {"Content-Type": "application/json",
+                   "Authorization": "Bearer " + self.access_token}
         await self.http_request(LOGIN_URL_6, "get", headers=headers)
 
         ####

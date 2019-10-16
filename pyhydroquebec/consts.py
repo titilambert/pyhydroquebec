@@ -25,17 +25,24 @@ CONTRACT_URL_1 = "{}/cl/prive/api/v3_0/partenaires/infoBase".format(HOST_SERVICE
 CONTRACT_URL_2 = "{}/portail/prive/maj-session/".format(HOST_SPRING)
 CONTRACT_URL_3 = "{}/portail/fr/group/clientele/gerer-mon-compte/".format(HOST_SPRING)
 
-CONTRACT_CURRENT_URL_1 = "{}/portail/fr/group/clientele/portrait-de-consommation".format(HOST_SPRING)
-CONTRACT_CURRENT_URL_2 = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesPeriodesConsommation".format(HOST_SPRING)
+CONTRACT_CURRENT_URL_1 = ("{}/portail/fr/group/clientele/"
+                          "portrait-de-consommation".format(HOST_SPRING))
+CONTRACT_CURRENT_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                          "resourceObtenirDonneesPeriodesConsommation".format(HOST_SPRING))
 
-ANNUAL_DATA_URL = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesConsommationAnnuelles".format(HOST_SPRING)
+ANNUAL_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                   "resourceObtenirDonneesConsommationAnnuelles".format(HOST_SPRING))
 
-MONTHLY_DATA_URL = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesConsommationMensuelles".format(HOST_SPRING)
+MONTHLY_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                    "resourceObtenirDonneesConsommationMensuelles".format(HOST_SPRING))
 
-DAILY_DATA_URL = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesQuotidiennesConsommation".format(HOST_SPRING)
+DAILY_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                  "resourceObtenirDonneesQuotidiennesConsommation".format(HOST_SPRING))
 
-HOURLY_DATA_URL_1 = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesConsommationHoraires".format(HOST_SPRING)
-HOURLY_DATA_URL_2 = "{}/portail/fr/group/clientele/portrait-de-consommation/resourceObtenirDonneesMeteoHoraires".format(HOST_SPRING)
+HOURLY_DATA_URL_1 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                     "resourceObtenirDonneesConsommationHoraires".format(HOST_SPRING))
+HOURLY_DATA_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                     "resourceObtenirDonneesMeteoHoraires".format(HOST_SPRING))
 
 
 
