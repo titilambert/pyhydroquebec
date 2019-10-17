@@ -16,8 +16,6 @@ from pyhydroquebec.client import HydroQuebecClient
 from pyhydroquebec.consts import DAILY_MAP, CURRENT_MAP, REQUESTS_TIMEOUT, HQ_TIMEZONE
 
 
-MAIN_LOOP_WAIT_TIME = 900
-
 def get_mac():
     """Get mac address."""
     mac_addr = (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
@@ -27,6 +25,8 @@ def get_mac():
 
 class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
     """MQTT MqttHydroQuebec."""
+    timeout = None
+    frequency = None
 
     def __init__(self):
         """Constructor."""
@@ -35,6 +35,9 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
     def read_config(self):
         with open(os.environ['CONFIG']) as fhc:
             self.config = load(fhc, Loader=Loader)
+        self.timeout = self.config.get('timeout', 30)
+        # 6 hours
+        self.frequency = self.config.get('frequency', 8640)
 
 
     async def _init_main_loop(self):
@@ -85,7 +88,9 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         """Run main loop."""
         self.logger.debug("Get Data")
         for account in self.config['accounts']:
-            client = HydroQuebecClient(account['username'], account['password'], self.config['timeout'])
+            client = HydroQuebecClient(account['username'],
+                                       account['password'],
+                                       self.timeout)
             await client.login()
             for contract_data in account['contracts']:
                 # Get contract
@@ -150,7 +155,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
             await client.close_session()
 
         i = 0
-        while i < MAIN_LOOP_WAIT_TIME and self.must_run:
+        while i < self.frequency and self.must_run:
             await asyncio.sleep(1)
             i += 1
 
