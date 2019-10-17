@@ -135,6 +135,7 @@ class HydroQuebecClient():
 
         data = json_dumps(data)
 
+        # TODO catch error
         res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
         json_res = await res.json()
 

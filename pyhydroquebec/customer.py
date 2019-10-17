@@ -84,8 +84,8 @@ class Customer():
         json_res = json.loads(text_res)['results'][0]
 
         self._current_period = {}
-        for key, raw_key in CURRENT_MAP:
-            self._current_period[key] = json_res[raw_key]
+        for key, data in CURRENT_MAP.items():
+            self._current_period[key] = json_res[data['raw_name']]
 
     @property
     def current_period(self):
@@ -195,9 +195,9 @@ class Customer():
             end_date_str = end_date
 
         headers = {"Content-Type": "application/json"}
-        params = {"dateDebutPeriode": start_date_str}
+        params = {"dateDebut": start_date_str}
         if end_date_str:
-            params.update({"dateFinPeriode": end_date_str})
+            params.update({"dateFin": end_date_str})
         res = await self._client.http_request(DAILY_DATA_URL, "get",
                                               params=params, headers=headers)
         text_res = await res.text()
@@ -212,10 +212,10 @@ class Customer():
             if 'compare' in day_data:
                 self._compare_daily_data[day] = {}
 
-            for key, raw_key in DAILY_MAP:
-                self._current_daily_data[day][key] = day_data['courant'][raw_key]
+            for key, data in DAILY_MAP.items():
+                self._current_daily_data[day][key] = day_data['courant'][data['raw_name']]
                 if 'compare' in day_data:
-                    self._compare_daily_data[day][key] = day_data['compare'][raw_key]
+                    self._compare_daily_data[day][key] = day_data['compare'][data['raw_name']]
 
     @property
     def current_daily_data(self):

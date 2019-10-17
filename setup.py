@@ -1,7 +1,7 @@
 import sys
 
 from setuptools import setup
-from version import VERSION
+from pyhydroquebec.__version__ import VERSION
 
 if sys.version_info < (3,4):
     sys.exit('Sorry, Python < 3.4 is not supported')

@@ -17,9 +17,12 @@ def output_text(customer, show_hourly=False):
     """Format data to get a readable output."""
     print(OVERVIEW_TPL.format(customer))
     print(CONSUMPTION_PROFILE_TPL.format(d=customer.current_period))
-    print(ANNUAL_TPL)
-    raise Exception("FIXME: missing YESTERDAY_COMSUMPTION, HOURLY")
-    print(YESTERDAY_TPL)
+    print(ANNUAL_TPL.format(d=customer.current_annual_data))
+    yesterday_date = list(customer.current_daily_data.keys())[0]
+    data = {'date': yesterday_date}
+    data.update(customer.current_daily_data[yesterday_date])
+    print(YESTERDAY_TPL.format(d=data))
+    raise Exception("FIXME: missing HOURLY")
     print(HOURLY_TPL)
 
 def output_influx(contract):

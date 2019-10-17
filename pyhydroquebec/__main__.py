@@ -2,14 +2,14 @@
 
 import argparse
 import asyncio
-import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 import sys
 
 from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.outputter import output_text, output_influx, output_json
 from pyhydroquebec.mqtt_daemon import MqttHydroQuebec
-from version import VERSION
+from pyhydroquebec.__version__ import VERSION
 
 
 async def fetch_data(client, contract_id):
@@ -21,6 +21,13 @@ async def fetch_data(client, contract_id):
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
         await customer.fetch_monthly_data()
+        yesterday = datetime.now(HQ_TIMEZONE) - timedelta(days=1)
+        yesterday_str = yesterday.strftime("%Y-%m-%d")
+        await customer.fetch_daily_data(yesterday_str, yesterday_str)
+        if not customer.current_daily_data:
+            yesterday = yesterday - timedelta(days=1)
+            yesterday_str = yesterday.strftime("%Y-%m-%d")
+            await customer.fetch_daily_data(yesterday_str, yesterday_str)
         return customer
         #await customer.fetch_hourly_data("2019-10-12")
 
@@ -73,11 +80,11 @@ def main():
     raw_group.add_argument('--detailled-energy', action='store_true',
                            default=False, help='Get raw json output download')
     raw_group.add_argument('--start-date',
-                           default=(datetime.datetime.now(HQ_TIMEZONE) -
-                                    datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+                           default=(datetime.now(HQ_TIMEZONE) -
+                                    timedelta(days=1)).strftime("%Y-%m-%d"),
                            help='Start date for detailled-output')
     raw_group.add_argument('--end-date',
-                           default=datetime.datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
+                           default=datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
                            help="End date for detailled-output")
 
     args = parser.parse_args()
@@ -103,8 +110,8 @@ def main():
     elif args.detailled_energy is False:
         async_func = fetch_data(client, args.contract)
     else:
-        start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
-        end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
+        start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
         async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
 
     # Fetch data
