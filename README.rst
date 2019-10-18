@@ -79,9 +79,11 @@ Edit config.yaml
 Docker
 ######
 
+Docker image list: https://gitlab.com/ttblt-hass/pyhydroquebec/container_registry
+
 ::
 
-    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** ncareau/pyhydroquebec
+    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** registry.gitlab.com/ttblt-hass/pyhydroquebec/cli:master
 
 Docker variables
 """""""""
