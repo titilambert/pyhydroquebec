@@ -1,7 +1,7 @@
 import sys
 
 from setuptools import setup
-from version import VERSION
+from pyhydroquebec.__version__ import VERSION
 
 if sys.version_info < (3,4):
     sys.exit('Sorry, Python < 3.4 is not supported')
@@ -20,7 +20,8 @@ setup(name='pyhydroquebec',
       packages=['pyhydroquebec'],
       entry_points={
           'console_scripts': [
-              'pyhydroquebec = pyhydroquebec.__main__:main'
+              'pyhydroquebec = pyhydroquebec.__main__:main',
+              'mqtt_pyhydroquebec = pyhydroquebec.__main__:mqtt_daemon'
           ]
       },
       license='Apache 2.0',

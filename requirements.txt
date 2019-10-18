@@ -1,3 +1,6 @@
 aiohttp
+cachetools==3.1.1
+mqtt-hass-base==0.1.4
+PyYAML==5.1.2
 bs4
 python-dateutil
