@@ -16,6 +16,21 @@ from pyhydroquebec.consts import (REQUESTS_TIMEOUT, CONTRACT_URL_1, CONTRACT_URL
                                   LOGGING_LEVELS)
 
 
+def _get_logger(log_level):
+    """Build logger."""
+    if log_level.upper() not in LOGGING_LEVELS:
+        raise PyHydroQuebecError("Bad logging level. "
+                                 "Should be in {}".format(", ".join(LOGGING_LEVELS)))
+    logging_level = getattr(logging, log_level.upper())
+    logger = logging.getLogger(name='pyhydroquebec')
+    logger.setLevel(logging_level)
+    console_handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    return logger
+
+
 class HydroQuebecClient():
     """PyHydroQuebec HTTP Client."""
 
@@ -31,25 +46,11 @@ class HydroQuebecClient():
         self.access_token = None
         self.cookies = {}
         self._selected_customer = None
-        self.logger = self._get_logger(log_level)
-
-    def _get_logger(self, log_level):
-        """Build logger."""
-        if log_level.upper() not in LOGGING_LEVELS:
-            raise PyHydroQuebecError("Bad logging level. "
-                                     "Should be in {}".format(", ".join(LOGGING_LEVELS)))
-        logging_level = getattr(logging, log_level.upper())
-        logger = logging.getLogger(name='pyhydroquebec')
-        logger.setLevel(logging_level)
-        console_handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-        return logger
+        self.logger = _get_logger(log_level)
 
     async def http_request(self, url, method, params=None, data=None,
                            headers=None, ssl=True, cookies=None, status=200):
-        """Wrapper function making an HTTP request."""
+        """Prepare and run HTTP/S request."""
         site = url.split("/")[2]
         if params is None:
             params = {}
@@ -64,12 +65,12 @@ class HydroQuebecClient():
 
         self.logger.debug("HTTP query %s to %s", url, method)
         raw_res = await getattr(self._session, method)(url,
-                params=params,
-                data=data,
-                allow_redirects=False,
-                ssl=ssl,
-                cookies=cookies,
-                headers=headers)
+                                                       params=params,
+                                                       data=data,
+                                                       allow_redirects=False,
+                                                       ssl=ssl,
+                                                       cookies=cookies,
+                                                       headers=headers)
         if raw_res.status != status:
             raise PyHydroQuebecHTTPError("Error Fetching {}".format(url))
 
@@ -110,8 +111,8 @@ class HydroQuebecClient():
 
         params = {"mode": "web"}
         await self.http_request(CONTRACT_URL_2, "get",
-                params=params,
-                headers=headers)
+                                params=params,
+                                headers=headers)
 
         # load overview page
         await self.http_request(CONTRACT_URL_3, "get")
@@ -132,7 +133,7 @@ class HydroQuebecClient():
             self._session = aiohttp.ClientSession(requote_redirect_url=False,)
 
     async def login(self):
-        """Log in HydroQuebec website
+        """Log in HydroQuebec website.
 
         Hydroquebec is using ForgeRock solution for authentication.
         """
@@ -164,7 +165,8 @@ class HydroQuebecClient():
         json_res = await res.json()
 
         if 'tokenId' not in json_res:
-            self.logger.error("Unable to authenticate. You can retry and/or check your credentials.")
+            self.logger.error("Unable to authenticate."
+                              "You can retry and/or check your credentials.")
             return
 
         # Find settings for the authorize

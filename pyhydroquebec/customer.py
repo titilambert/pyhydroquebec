@@ -12,11 +12,10 @@ from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
                                   ANNUAL_MAP, CURRENT_MAP,
                                   )
-#from pyhydroquebec.error import PyHydroQuebecError
 
 
 class Customer():
-    """Represents a HydroQuebec account
+    """Represents a HydroQuebec account.
 
     The account_id is called 'noPartenaireDemandeur' in the HydroQuebec API
     The customer_id is called 'Customer number' in the HydroQuebec 'My accounts' UI
@@ -24,6 +23,7 @@ class Customer():
     """
 
     def __init__(self, client, account_id, customer_id, timeout, logger):
+        """Constructor."""
         self._client = client
         self.account_id = account_id
         self.customer_id = customer_id
@@ -42,7 +42,7 @@ class Customer():
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_summary(self):
-        """Fetch data from overview page
+        """Fetch data from overview page.
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/gerer-mon-compte
         """
@@ -57,8 +57,10 @@ class Customer():
                               replace("\xa0", ""))
 
         raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        self.contract_id = raw_contract_id.split("Contrat", 1)[-1].\
-                            replace("\t", "").replace("\n", "")
+        self.contract_id = (raw_contract_id
+                            .split("Contrat", 1)[-1]
+                            .replace("\t", "")
+                            .replace("\n", ""))
 
         # Needs to load the consumption profile page to not break
         # the next loading of the other pages
@@ -71,7 +73,7 @@ class Customer():
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_current_period(self):
-        """Fetch data of the current period
+        """Fetch data of the current period.
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
         """
@@ -273,7 +275,6 @@ class Customer():
         tmp_hour_dict = dict((h, {}) for h in range(24))
         for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
             tmp_hour_dict[hour]['average_temperature'] = temp
-
 
         params = {"date": day_str}
         res = await self._client.http_request(HOURLY_DATA_URL_1, "get", params=params)

@@ -5,12 +5,10 @@ This module defines the different output functions:
 * influxdb
 * json
 """
-import json
-import datetime
 
-from pyhydroquebec.consts import (HQ_TIMEZONE, OVERVIEW_TPL,
+from pyhydroquebec.consts import (OVERVIEW_TPL,
                                   CONSUMPTION_PROFILE_TPL,
-                                  YESTERDAY_TPL, HOURLY_TPL, ANNUAL_TPL)
+                                  YESTERDAY_TPL, ANNUAL_TPL)
 
 
 def output_text(customer, show_hourly=False):
@@ -22,13 +20,13 @@ def output_text(customer, show_hourly=False):
     data = {'date': yesterday_date}
     data.update(customer.current_daily_data[yesterday_date])
     print(YESTERDAY_TPL.format(d=data))
+    # print(HOURLY_TPL)
     raise Exception("FIXME: missing HOURLY")
-    print(HOURLY_TPL)
+
 
 def output_influx(contract):
     """Print data using influxDB format."""
     raise Exception("FIXME")
-
 #    # Pop yesterdays data
 #    yesterday_data = contract]['yesterday_hourly_consumption']
 #    del data[contract]['yesterday_hourly_consumption']
@@ -62,7 +60,7 @@ def output_influx(contract):
 #        yesterday_str = str(int(yesterday.timestamp() * 1000000000))
 #
 #        print(msg.format(contract, data, yesterday_str))
-#
+
 
 def output_json(data):
     """Print data as Json."""

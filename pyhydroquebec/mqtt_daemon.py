@@ -1,19 +1,23 @@
+"""MQTT Daemon which collected Hydroquebec Data.
+
+And send it to MQTT using Home-Assistant format.
+"""
 import asyncio
 from datetime import datetime, timedelta
 import json
 import os
 import uuid
 
-from yaml import load, dump
+from yaml import load
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader, Dumper
+    from yaml import Loader
 import mqtt_hass_base
 
 from pyhydroquebec.__version__ import VERSION
 from pyhydroquebec.client import HydroQuebecClient
-from pyhydroquebec.consts import DAILY_MAP, CURRENT_MAP, REQUESTS_TIMEOUT, HQ_TIMEZONE
+from pyhydroquebec.consts import DAILY_MAP, CURRENT_MAP, HQ_TIMEZONE
 
 
 def get_mac():
@@ -25,6 +29,7 @@ def get_mac():
 
 class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
     """MQTT MqttHydroQuebec."""
+
     timeout = None
     frequency = None
 
@@ -33,23 +38,23 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         mqtt_hass_base.MqttDevice.__init__(self, "mqtt-hydroquebec")
 
     def read_config(self):
+        """Read config from yaml file."""
         with open(os.environ['CONFIG']) as fhc:
             self.config = load(fhc, Loader=Loader)
         self.timeout = self.config.get('timeout', 30)
         # 6 hours
         self.frequency = self.config.get('frequency', 8640)
 
-
     async def _init_main_loop(self):
         """Init before starting main loop."""
 
-    def _publish_sensor(self, sensor_type, account_id, customer_id, contract_id,
+    def _publish_sensor(self, sensor_type, contract_id,
                         unit=None, device_class=None, icon=None):
+        """Publish a Home-Assistant MQTT sensor."""
         mac_addr = get_mac()
 
         base_topic = ("{}/sensor/hydroquebec_{}".format(self.mqtt_root_topic,
-                                               contract_id,
-                                               ))
+                                                        contract_id))
 
         sensor_config = {}
         sensor_config["device"] = {"connections": [["mac", mac_addr]],
@@ -82,8 +87,6 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
 
         return sensor_state_config
 
-
-
     async def _main_loop(self):
         """Run main loop."""
         self.logger.debug("Get Data")
@@ -111,47 +114,45 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 yesterday_str = yesterday.strftime("%Y-%m-%d")
                 await customer.fetch_daily_data(yesterday_str, yesterday_str)
                 if not customer.current_daily_data:
-                    yesterday = yesterday - timedelta(days=1)    
+                    yesterday = yesterday - timedelta(days=1)
                     yesterday_str = yesterday.strftime("%Y-%m-%d")
                     await customer.fetch_daily_data(yesterday_str, yesterday_str)
 
                 # Balance
-                ## Publish sensor
+                # Publish sensor
                 balance_topic = self._publish_sensor('balance', customer.account_id,
-                                                    customer.customer_id, customer.contract_id,
-                                                    unit="$", device_class=None,
-                                                    icon="mdi:currency-usd")
-                ## Send sensor data
-                self.mqtt_client.publish(topic=balance_topic,
-                         payload=customer.balance)
+                                                     unit="$", device_class=None,
+                                                     icon="mdi:currency-usd")
+                # Send sensor data
+                self.mqtt_client.publish(
+                        topic=balance_topic,
+                        payload=customer.balance)
 
                 # Current period
                 for data_name, data in CURRENT_MAP.items():
-                    ## Publish sensor
+                    # Publish sensor
                     sensor_topic = self._publish_sensor(data_name,
-                                                        customer.account_id,
-                                                        customer.customer_id,
                                                         customer.contract_id,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
                                                         device_class=data['device_class'])
-                    ## Send sensor data
-                    self.mqtt_client.publish(topic=sensor_topic,
-                        payload=customer.current_period[data_name])
+                    # Send sensor data
+                    self.mqtt_client.publish(
+                            topic=sensor_topic,
+                            payload=customer.current_period[data_name])
 
                 # Yesterday data
                 for data_name, data in DAILY_MAP.items():
-                    ## Publish sensor
+                    # Publish sensor
                     sensor_topic = self._publish_sensor('yesterday_' + data_name,
-                                                        customer.account_id,
-                                                        customer.customer_id,
                                                         customer.contract_id,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
                                                         device_class=data['device_class'])
-                    ## Send sensor data
-                    self.mqtt_client.publish(topic=sensor_topic,
-                        payload=customer.current_daily_data[yesterday_str][data_name])
+                    # Send sensor data
+                    self.mqtt_client.publish(
+                            topic=sensor_topic,
+                            payload=customer.current_daily_data[yesterday_str][data_name])
 
             await client.close_session()
 
@@ -160,6 +161,9 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         while i < self.frequency and self.must_run:
             await asyncio.sleep(1)
             i += 1
+
+    def _on_connect(self, client, userdata, flags, rc):
+        """On connect callback method."""
 
     def _on_publish(self, client, userdata, mid):
         """MQTT on publish callback."""

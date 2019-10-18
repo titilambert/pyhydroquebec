@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from pprint import pprint
 import sys
 
-from pyhydroquebec import HydroQuebecClient, REQUESTS_TIMEOUT, HQ_TIMEZONE
+from pyhydroquebec.client import HydroQuebecClient
+from pyhydroquebec.consts import REQUESTS_TIMEOUT, HQ_TIMEZONE
 from pyhydroquebec.outputter import output_text, output_influx, output_json
 from pyhydroquebec.mqtt_daemon import MqttHydroQuebec
 from pyhydroquebec.__version__ import VERSION
@@ -29,7 +30,8 @@ async def fetch_data(client, contract_id):
             yesterday_str = yesterday.strftime("%Y-%m-%d")
             await customer.fetch_daily_data(yesterday_str, yesterday_str)
         return customer
-        #await customer.fetch_hourly_data("2019-10-12")
+        # await customer.fetch_hourly_data("2019-10-12")
+
 
 async def dump_data(client, contract_id):
     """Fetch all data and dump them for debug and dev."""
@@ -52,6 +54,7 @@ async def fetch_data_detailled_energy_use(client, start_date, end_date):
     """Fetch hourly data for a given period."""
     # TODO
     raise Exception("FIXME")
+
 
 def main():
     """Entrypoint function."""

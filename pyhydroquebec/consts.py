@@ -46,9 +46,6 @@ HOURLY_DATA_URL_1 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
 HOURLY_DATA_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
                      "resourceObtenirDonneesMeteoHoraires".format(HOST_SPRING))
 
-
-
-
 CURRENT_MAP = {'period_total_bill': {'raw_name': 'montantFacturePeriode',
                                      'unit': '$',
                                      'icon': 'mdi:currency-usd',
@@ -104,19 +101,19 @@ DAILY_MAP = {'total_consumption': {'raw_name': 'consoTotalQuot',
                                    'unit': 'Kwh',
                                    'icon': 'mdi:flash',
                                    'device_class': None},
-            'lower_price_consumption': {'raw_name': 'consoRegQuot',
-                                        'unit': 'Kwh',
-                                        'icon': 'mdi:flash',
-                                        'device_class': None},
-            'higher_price_consumption': {'raw_name': 'consoHautQuot',
-                                         'unit': 'Kwh', 
+             'lower_price_consumption': {'raw_name': 'consoRegQuot',
+                                         'unit': 'Kwh',
                                          'icon': 'mdi:flash',
                                          'device_class': None},
-            'average_temperature': {'raw_name': 'tempMoyenneQuot',
-                                    'unit': '°C',
-                                    'icon': None,
-                                    'device_class': 'temperature'}
-            }
+             'higher_price_consumption': {'raw_name': 'consoHautQuot',
+                                          'unit': 'Kwh',
+                                          'icon': 'mdi:flash',
+                                          'device_class': None},
+             'average_temperature': {'raw_name': 'tempMoyenneQuot',
+                                     'unit': '°C',
+                                     'icon': None,
+                                     'device_class': 'temperature'}
+             }
 ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
               ('annual_total_consumption', 'consoTotalAnnee'),
               ('annual_total_bill', 'montantFactureAnnee'),
@@ -164,7 +161,7 @@ Mean daily:             {d[period_mean_daily_consumption]:.2f} kWh
 
 YESTERDAY_TPL = ("""
 Yesterday ({d[date]}) consumption
-==================================    
+==================================
 Temperature:            {d[average_temperature]:d} °C
 Lower price:            {d[lower_price_consumption]:.2f} kWh
 Higher price:           {d[higher_price_consumption]:.2f} kWh
