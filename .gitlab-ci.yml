@@ -23,8 +23,23 @@ docker:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - export CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-7)
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:$CI_COMMIT_SHORT_SHA
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:latest
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:master
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:$CI_COMMIT_SHORT_SHA
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:latest
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:master
   only:
   - master
+
+docker_tag:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: docker
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - export CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-7)
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:$CI_COMMIT_TAG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:latest
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:$CI_COMMIT_TAG
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:latest
+  only:
+  - tags
