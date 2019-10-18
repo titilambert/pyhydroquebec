@@ -2,9 +2,9 @@
 set -e
 
 # Config
-if [ ! -z "$CONFIG" ]
+if [ -z "$CONFIG" ]
 then
-    export CONFIG="/etc/pyhydroquebec.yaml"
+    export CONFIG="/etc/pyhydroquebec/pyhydroquebec.yaml"
 fi
 
 mqtt_pyhydroquebec
