@@ -1,0 +1,30 @@
+stages:
+- test
+- docker
+
+test:
+  image: python:3.7-stretch
+  stage: test
+  before_script:
+    - pip install -r requirements.txt
+    - pip install -r test_requirements.txt
+  script:
+    - pylint --rcfile=.pylintrc pyhydroquebec
+    - flake8  --max-line-length=100 pyhydroquebec
+    - pydocstyle pyhydroquebec
+    # TODO add unit tests
+
+docker:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  stage: docker
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - export CI_COMMIT_SHORT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-7)
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:$CI_COMMIT_SHORT_SHA
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/mqtt/Dockerfile --destination $CI_REGISTRY_IMAGE/mqtt:latest
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:$CI_COMMIT_SHORT_SHA
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/docker/cli/Dockerfile --destination $CI_REGISTRY_IMAGE/cli:latest
+  only:
+  - master
