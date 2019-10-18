@@ -38,6 +38,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         self.timeout = self.config.get('timeout', 30)
         # 6 hours
         self.frequency = self.config.get('frequency', 8640)
+        self.mqtt_root_topic = self.config.get('mqtt_root_topic', '')
 
 
     async def _init_main_loop(self):
