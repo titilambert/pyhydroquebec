@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 import string
 from json import dumps as json_dumps
+import logging
 
 import aiohttp
 
@@ -11,14 +12,15 @@ from pyhydroquebec.customer import Customer
 from pyhydroquebec.error import PyHydroQuebecHTTPError, PyHydroQuebecError
 from pyhydroquebec.consts import (REQUESTS_TIMEOUT, CONTRACT_URL_1, CONTRACT_URL_2,
                                   CONTRACT_URL_3, CONTRACT_CURRENT_URL_1, LOGIN_URL_3,
-                                  LOGIN_URL_4, LOGIN_URL_5, LOGIN_URL_6, LOGIN_URL_7)
+                                  LOGIN_URL_4, LOGIN_URL_5, LOGIN_URL_6, LOGIN_URL_7,
+                                  LOGGING_LEVELS)
 
 
 class HydroQuebecClient():
     """PyHydroQuebec HTTP Client."""
 
     def __init__(self, username, password, timeout=REQUESTS_TIMEOUT,
-                 session=None):
+                 session=None, log_level='INFO'):
         """Initialize the client object."""
         self.username = username
         self.password = password
@@ -29,6 +31,21 @@ class HydroQuebecClient():
         self.access_token = None
         self.cookies = {}
         self._selected_customer = None
+        self.logger = self._get_logger(log_level)
+
+    def _get_logger(self, log_level):
+        """Build logger."""
+        if log_level.upper() not in LOGGING_LEVELS:
+            raise PyHydroQuebecError("Bad logging level. "
+                                     "Should be in {}".format(", ".join(LOGGING_LEVELS)))
+        logging_level = getattr(logging, log_level.upper())
+        logger = logging.getLogger(name='pyhydroquebec')
+        logger.setLevel(logging_level)
+        console_handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+        return logger
 
     async def http_request(self, url, method, params=None, data=None,
                            headers=None, ssl=True, cookies=None, status=200):
@@ -45,6 +62,7 @@ class HydroQuebecClient():
                 self.cookies[site] = {}
             cookies = self.cookies[site]
 
+        self.logger.debug("HTTP query %s to %s", url, method)
         raw_res = await getattr(self._session, method)(url,
                 params=params,
                 data=data,
@@ -71,6 +89,7 @@ class HydroQuebecClient():
         if self._selected_customer == customer_id and not force:
             return
 
+        self.logger.info("Selecting customer %s", customer_id)
         if force and "cl-ec-spring.hydroquebec.com" in self.cookies:
             del self.cookies["cl-ec-spring.hydroquebec.com"]
 
@@ -100,7 +119,7 @@ class HydroQuebecClient():
         await self.http_request(CONTRACT_CURRENT_URL_1, "get")
 
         self._selected_customer = customer_id
-
+        self.logger.info("Customer %s selected", customer_id)
 
     @property
     def selected_customer(self):
@@ -113,12 +132,13 @@ class HydroQuebecClient():
             self._session = aiohttp.ClientSession(requote_redirect_url=False,)
 
     async def login(self):
-        """
+        """Log in HydroQuebec website
 
         Hydroquebec is using ForgeRock solution for authentication.
         """
         # Get http session
         self._get_httpsession()
+        self.logger.info("Log in using %s", self.username)
 
         # Get the callback template
         headers = {"Content-Type": "application/json",
@@ -136,11 +156,15 @@ class HydroQuebecClient():
         data = json_dumps(data)
 
         # TODO catch error
-        res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
+        try:
+            res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
+        except PyHydroQuebecHTTPError:
+            self.logger.critical('Unable to connect. Check your credentials')
+            return
         json_res = await res.json()
 
         if 'tokenId' not in json_res:
-            print("Unable to authenticate. You can retry and/or check your credentials.")
+            self.logger.error("Unable to authenticate. You can retry and/or check your credentials.")
             return
 
         # Find settings for the authorize
@@ -179,7 +203,7 @@ class HydroQuebecClient():
 
         # Check if we have the access token
         if 'access_token' not in callback_params or not callback_params['access_token']:
-            print("Access token not found")
+            self.logger.critical("Access token not found")
             return
 
         self.access_token = callback_params['access_token']
@@ -189,7 +213,8 @@ class HydroQuebecClient():
         await self.http_request(LOGIN_URL_6, "get", headers=headers)
 
         ####
-        # Get customer
+        # Get customers
+        self.logger.info("fetching customers")
 
         res = await self.http_request(LOGIN_URL_7, "get", headers=headers)
         json_res = await res.json()
@@ -198,7 +223,8 @@ class HydroQuebecClient():
             account_id = account['noPartenaireDemandeur']
             customer_id = account['noPartenaireTitulaire']
 
-            customer = Customer(self, account_id, customer_id, self._timeout)
+            customer_logger = self.logger.getChild('customer')
+            customer = Customer(self, account_id, customer_id, self._timeout, customer_logger)
             self._customers.append(customer)
             await customer.fetch_summary()
 

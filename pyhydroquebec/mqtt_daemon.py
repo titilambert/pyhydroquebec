@@ -90,7 +90,8 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         for account in self.config['accounts']:
             client = HydroQuebecClient(account['username'],
                                        account['password'],
-                                       self.timeout)
+                                       self.timeout,
+                                       log_level=self._loglevel)
             await client.login()
             for contract_data in account['contracts']:
                 # Get contract
@@ -154,6 +155,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
 
             await client.close_session()
 
+        self.logger.info("Waiting for %d seconds before the next check", self.frequency)
         i = 0
         while i < self.frequency and self.must_run:
             await asyncio.sleep(1)

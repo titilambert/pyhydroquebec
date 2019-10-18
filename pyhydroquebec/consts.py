@@ -8,6 +8,8 @@ HQ_TIMEZONE = tz.gettz('America/Montreal')
 REQUESTS_TIMEOUT = 30
 REQUESTS_TTL = 1
 
+LOGGING_LEVELS = ("DEBUG", "INFO", 'WARNING', 'ERROR', 'CRITICAL')
+
 HOST_LOGIN = "https://connexion.hydroquebec.com"
 HOST_SESSION = "https://session.hydroquebec.com"
 HOST_SERVICES = "https://cl-services.idp.hydroquebec.com"

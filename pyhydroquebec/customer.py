@@ -23,12 +23,13 @@ class Customer():
     The contract_id is called 'Contract' in the HydroQuebec 'At a glance' UI
     """
 
-    def __init__(self, client, account_id, customer_id, timeout):
+    def __init__(self, client, account_id, customer_id, timeout, logger):
         self._client = client
         self.account_id = account_id
         self.customer_id = customer_id
         self.contract_id = None
         self._timeout = timeout
+        self._logger = logger.getChild(customer_id)
         self._balance = None
         self._current_period = {}
         self._current_annual_data = {}
@@ -45,6 +46,7 @@ class Customer():
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/gerer-mon-compte
         """
+        self._logger.info("Fetching summary page")
         await self._client.select_customer(self.account_id, self.customer_id)
 
         res = await self._client.http_request(CONTRACT_URL_3, "get")
@@ -73,6 +75,7 @@ class Customer():
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
         """
+        self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
 
         await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
@@ -99,6 +102,7 @@ class Customer():
         API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
         portrait-de-consommation/resourceObtenirDonneesConsommationAnnuelles
         """
+        self._logger.info("Fetching annual data")
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(ANNUAL_DATA_URL, "get", headers=headers)
@@ -129,6 +133,7 @@ class Customer():
         API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
         portrait-de-consommation/resourceObtenirDonneesConsommationMensuelles
         """
+        self._logger.info("Fetching monthly data")
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(MONTHLY_DATA_URL, "get", headers=headers)
@@ -166,6 +171,7 @@ class Customer():
         API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
         portrait-de-consommation/resourceObtenirDonneesQuotidiennesConsommation
         """
+        self._logger.info("Fetching daily data between %s and %s", start_date, end_date)
         await self._client.select_customer(self.account_id, self.customer_id)
         if start_date is None:
             # Get yesterday
@@ -234,6 +240,7 @@ class Customer():
         API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
         portrait-de-consommation/resourceObtenirDonneesConsommationHoraires
         """
+        self._logger.info("Fetching hourly data for %s", day)
         await self._client.select_customer(self.account_id, self.customer_id)
         await self._client.select_customer(self.account_id, self.customer_id)
 
