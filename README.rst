@@ -2,7 +2,6 @@
 PyHydroQuebec
 #############
 
-**Important**: This library is currently not in working condition since the new Hydro Quebec website came in production (Around 2019-10-08). The new website uses a new authentication mechanism that needs more development (OAuth) which are currenlty under way. See issue `#35 <https://github.com/titilambert/pyhydroquebec/issues/35>`_ for more information 
 
 TODO
 ####
