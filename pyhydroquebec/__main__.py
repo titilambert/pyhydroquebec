@@ -29,8 +29,8 @@ async def fetch_data(client, contract_id):
             yesterday = yesterday - timedelta(days=1)
             yesterday_str = yesterday.strftime("%Y-%m-%d")
             await customer.fetch_daily_data(yesterday_str, yesterday_str)
+        await customer.fetch_hourly_data(yesterday_str)
         return customer
-        # await customer.fetch_hourly_data("2019-10-12")
 
 
 async def dump_data(client, contract_id):
