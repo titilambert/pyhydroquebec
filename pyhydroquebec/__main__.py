@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime, timedelta
 from pprint import pprint
 import sys
+import os
 
 from pyhydroquebec.client import HydroQuebecClient
 from pyhydroquebec.consts import REQUESTS_TIMEOUT, HQ_TIMEZONE
@@ -17,8 +18,11 @@ async def fetch_data(client, contract_id):
     """Fetch data for basic report."""
     await client.login()
     for customer in client.customers:
-        if customer.contract_id != contract_id:
+        if customer.contract_id != contract_id and contract_id is not None:
             continue
+        if contract_id is None:
+            client.logger.warn("Contract id not specified, using first available.")
+
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
         await customer.fetch_monthly_data()
@@ -96,22 +100,42 @@ def main():
         print(VERSION)
         return 0
 
-    if not args.username or not args.password:
+    # Check input for Username, Password and Contract - CLI overwrite ENV variable
+    hydro_user = hydro_pass = hydro_contract = None
+    #Check Env
+    if "PYHQ_USER" in os.environ:
+        hydro_user = os.environ["PYHQ_USER"]
+
+    if "PYHQ_PASSWORD" in os.environ:
+        hydro_pass = os.environ["PYHQ_PASSWORD"]
+
+    if "PYHQ_CONTRACT" in os.environ:
+        hydro_contract = os.environ["PYHQ_CONTRACT"]
+
+    #Check Cli
+    if args.username:
+        hydro_user = args.username
+    if args.password:
+        hydro_pass = args.password
+    if args.contract:
+        hydro_contract = args.contract
+
+    if not hydro_user or not hydro_pass:
         parser.print_usage()
         print("pyhydroquebec: error: the following arguments are required: "
-              "-u/--username, -p/--password")
+                "-u/--username, -p/--password")
         return 3
 
-    client = HydroQuebecClient(args.username, args.password, args.timeout)
+    client = HydroQuebecClient(hydro_user, hydro_pass, args.timeout)
     loop = asyncio.get_event_loop()
 
     # Get the async_func
     if args.list_contracts:
         async_func = list_contracts(client)
     elif args.dump_data:
-        async_func = dump_data(client, args.contract)
+        async_func = dump_data(client, hydro_contract)
     elif args.detailled_energy is False:
-        async_func = fetch_data(client, args.contract)
+        async_func = fetch_data(client, hydro_contract)
     else:
         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')

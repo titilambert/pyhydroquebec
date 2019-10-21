@@ -35,4 +35,14 @@ then
     PYHQ_CMD_CONTRACT="-c $PYHQ_CONTRACT"
 fi
 
-pyhydroquebec -u $PYHQ_USER -p $PYHQ_PASSWORD $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
+# Config
+if [ -z "$CONFIG" ]
+then
+    export CONFIG="/etc/pyhydroquebec/pyhydroquebec.yaml"
+fi
+
+if [ "$PYHQ_OUTPUT" = "MQTT"] 
+    mqtt_pyhydroquebec
+else
+    pyhydroquebec -u $PYHQ_USER -p $PYHQ_PASSWORD $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
+fi

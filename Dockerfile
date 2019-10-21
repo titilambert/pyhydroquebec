@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install -r requirements.txt --force-reinstall --no-cache-dir
 
-COPY docker/cli/entrypoint.sh .
+COPY ./entrypoint.sh .
 
 COPY . .
 
