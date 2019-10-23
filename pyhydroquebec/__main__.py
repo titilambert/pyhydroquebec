@@ -126,6 +126,7 @@ def main():
     finally:
         close_fut = asyncio.wait([client.close_session()])
         loop.run_until_complete(close_fut)
+        loop.close()
 
     # Output data
     if args.list_contracts:
