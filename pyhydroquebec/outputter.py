@@ -20,7 +20,7 @@ def output_text(customer, show_hourly=False):
     data = {'date': yesterday_date}
     data.update(customer.current_daily_data[yesterday_date])
     print(YESTERDAY_TPL.format(d=data))
-    if show_hourly: 
+    if show_hourly:
         print(HOURLY_HEADER)
         for hour, data in customer.hourly_data[yesterday_date]["hours"].items():
             print(HOURLY_TPL.format(d=data, hour=hour))
