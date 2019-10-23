@@ -104,18 +104,13 @@ def main():
         return 0
 
     # Check input for Username, Password and Contract - CLI overwrite ENV variable
-    hydro_user = hydro_pass = hydro_contract = None
-    #Check Env
-    if "PYHQ_USER" in os.environ:
-        hydro_user = os.environ["PYHQ_USER"]
 
-    if "PYHQ_PASSWORD" in os.environ:
-        hydro_pass = os.environ["PYHQ_PASSWORD"]
+    # Check Env
+    hydro_user = os.environ.get("PYHQ_USER")
+    hydro_pass = os.environ.get("PYHQ_PASSWORD")
+    hydro_contract = os.environ.get("PYHQ_CONTRACT")
 
-    if "PYHQ_CONTRACT" in os.environ:
-        hydro_contract = os.environ["PYHQ_CONTRACT"]
-
-    #Check Cli
+    # Check Cli
     if args.username:
         hydro_user = args.username
     if args.password:
@@ -126,10 +121,10 @@ def main():
     if not hydro_user or not hydro_pass:
         parser.print_usage()
         print("pyhydroquebec: error: the following arguments are required: "
-                "-u/--username, -p/--password")
+              "-u/--username, -p/--password")
         return 3
 
-    client = HydroQuebecClient(args.username, args.password,
+    client = HydroQuebecClient(hydro_user, hydro_pass,
                                args.timeout, log_level=args.log_level)
     loop = asyncio.get_event_loop()
 
