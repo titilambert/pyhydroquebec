@@ -81,6 +81,9 @@ def main():
                         default=False, help='Show contract python object as dict')
     parser.add_argument('-t', '--timeout',
                         default=REQUESTS_TIMEOUT, help='Request timeout')
+    parser.add_argument('-L', '--log-level',
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        default='WARNING', help='Log level')
     parser.add_argument('-V', '--version', action='store_true',
                         default=False, help='Show version')
     raw_group = parser.add_argument_group('Detailled-energy raw download option')
@@ -126,7 +129,8 @@ def main():
                 "-u/--username, -p/--password")
         return 3
 
-    client = HydroQuebecClient(hydro_user, hydro_pass, args.timeout)
+    client = HydroQuebecClient(args.username, args.password,
+                               args.timeout, log_level=args.log_level)
     loop = asyncio.get_event_loop()
 
     # Get the async_func
@@ -150,6 +154,7 @@ def main():
     finally:
         close_fut = asyncio.wait([client.close_session()])
         loop.run_until_complete(close_fut)
+        loop.close()
 
     # Output data
     if args.list_contracts:

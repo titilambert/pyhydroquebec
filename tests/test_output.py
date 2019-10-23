@@ -1,10 +1,10 @@
-#"""Tests for output module."""
-#import re
+"""Tests for output module."""
+# import re
 #
-#from pyhydroquebec.output import output_influx
+# from pyhydroquebec.output import output_influx
 #
 #
-#def test_influx_output(capsys):
+# def test_influx_output(capsys):
 #    """Test influx output function."""
 #
 #    data = {'310277835': {
