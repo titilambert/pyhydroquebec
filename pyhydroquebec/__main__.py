@@ -13,7 +13,7 @@ from pyhydroquebec.mqtt_daemon import MqttHydroQuebec
 from pyhydroquebec.__version__ import VERSION
 
 
-async def fetch_data(client, contract_id):
+async def fetch_data(client, contract_id, fetch_hourly=False):
     """Fetch data for basic report."""
     await client.login()
     for customer in client.customers:
@@ -29,8 +29,9 @@ async def fetch_data(client, contract_id):
             yesterday = yesterday - timedelta(days=1)
             yesterday_str = yesterday.strftime("%Y-%m-%d")
             await customer.fetch_daily_data(yesterday_str, yesterday_str)
+        if fetch_hourly:
+            await customer.fetch_hourly_data(yesterday_str)
         return customer
-        # await customer.fetch_hourly_data("2019-10-12")
 
 
 async def dump_data(client, contract_id):
@@ -115,7 +116,7 @@ def main():
     elif args.dump_data:
         async_func = dump_data(client, args.contract)
     elif args.detailled_energy is False:
-        async_func = fetch_data(client, args.contract)
+        async_func = fetch_data(client, args.contract, args.hourly)
     else:
         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')

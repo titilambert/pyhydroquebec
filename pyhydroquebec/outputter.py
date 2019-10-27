@@ -8,7 +8,7 @@ This module defines the different output functions:
 
 from pyhydroquebec.consts import (OVERVIEW_TPL,
                                   CONSUMPTION_PROFILE_TPL,
-                                  YESTERDAY_TPL, ANNUAL_TPL)
+                                  YESTERDAY_TPL, ANNUAL_TPL, HOURLY_HEADER, HOURLY_TPL)
 
 
 def output_text(customer, show_hourly=False):
@@ -20,8 +20,10 @@ def output_text(customer, show_hourly=False):
     data = {'date': yesterday_date}
     data.update(customer.current_daily_data[yesterday_date])
     print(YESTERDAY_TPL.format(d=data))
-    # print(HOURLY_TPL)
-    raise Exception("FIXME: missing HOURLY")
+    if show_hourly:
+        print(HOURLY_HEADER)
+        for hour, data in customer.hourly_data[yesterday_date]["hours"].items():
+            print(HOURLY_TPL.format(d=data, hour=hour))
 
 
 def output_influx(contract):

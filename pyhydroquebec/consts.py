@@ -168,11 +168,17 @@ Higher price:           {d[higher_price_consumption]:.2f} kWh
 Total:                  {d[total_consumption]:.2f} kWh
 """)
 
-HOURLY_TPL = ("""
+HOURLY_HEADER = ("""
 Yesterday consumption details
 -----------------------------
    Hour  | Temperature | Lower price consumption | Higher price consumption | total comsumption
 """)
+
+HOURLY_TPL = ("""  {hour:2d}:00  |"""
+              """     {d[average_temperature]:2d}     |"""
+              """     {d[lower_price_consumption]:.2f}     |"""
+              """     {d[higher_price_consumption]:.2f}     |"""
+              """     {d[total_consumption]:.2f}  """)
 
 ANNUAL_TPL = ("""
 Annual Total
