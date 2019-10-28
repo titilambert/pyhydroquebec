@@ -2,9 +2,9 @@
 set -e
 
 # Check user and password
-if [ -z "$PYHQ_USER" ] || [ -z "$PYHQ_USER" ]
+if [ -z "$PYHQ_USER" ] || [ -z "$PYHQ_PASSWORD" ]  && [ "$PYHQ_OUTPUT" != "MQTT" ]
 then
-    echo 'Error: No user or password. Set both environnement variables PYHQ_USER and PYHQ_PASSWORD'
+    echo 'Error: No user or password. Set both environnement variables PYHQ_USER and PYHQ_PASSWORD or PYHQ_OUTPUT=MQTT'
     exit 1
 fi
 
@@ -12,7 +12,7 @@ fi
 if [ ! -z "$PYHQ_OUTPUT" ]
 then
     case "$PYHQ_OUTPUT" in
-        "TEXT") 
+        "TEXT")
             PYHQ_CMD_OUTPUT=""
         ;;
         "JSON")
@@ -41,7 +41,8 @@ then
     export CONFIG="/etc/pyhydroquebec/pyhydroquebec.yaml"
 fi
 
-if [ "$PYHQ_OUTPUT" = "MQTT"] 
+if [ "$PYHQ_OUTPUT" == "MQTT" ]
+then
     mqtt_pyhydroquebec
 else
     pyhydroquebec -u $PYHQ_USER -p $PYHQ_PASSWORD $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
