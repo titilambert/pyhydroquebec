@@ -2,6 +2,7 @@
 PyHydroQuebec
 #############
 
+
 TODO
 ####
 
@@ -58,13 +59,31 @@ Print help
         --end-date END_DATE                 End date for detailled-output
 
 
+MQTT DAEMON
+###########
+
+NOT WORKING FOR NOW
+
+::
+
+   cp config.yaml.sample config.yaml
+
+Edit config.yaml
+
+::
+
+    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml mqtt_pyhydroquebec
+
+
 
 Docker
 ######
 
+Docker image list: https://gitlab.com/ttblt-hass/pyhydroquebec/container_registry
+
 ::
 
-    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** ncareau/pyhydroquebec
+    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** registry.gitlab.com/ttblt-hass/pyhydroquebec/cli:master
 
 Docker variables
 """""""""
@@ -100,10 +119,4 @@ Run test
 
 ::
 
-    make test
-
-Or
-
-::
-
-    tox
+    USERNAME=myhydrousername PASSWORD=myhydropassword tox
