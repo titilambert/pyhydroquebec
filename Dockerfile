@@ -1,9 +1,13 @@
-FROM python:3.6-alpine
+FROM python:3.7-alpine
+
+RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt --force-reinstall --no-cache-dir
+
+COPY ./entrypoint.sh .
 
 COPY . .
 

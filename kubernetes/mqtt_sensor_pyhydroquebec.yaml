@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pyhydroquebec
+data:
+   pyhydroquebec.yaml: |
+        timeout: 30
+        # 6 hours
+        frequency: 8640
+        accounts:
+        - username: USERNAME@EMAIL.COM
+          password: PASSWORD
+          contracts:
+            - id: CONTRACT_ID
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt-sensor-hydroquebec
+  labels:
+    app: mqtt-sensor-hydroquebec
+spec:
+  selector:
+    matchLabels:
+      app: mqtt-sensor-hydroquebec
+  template:
+    metadata:
+      labels:
+        app: mqtt-sensor-hydroquebec
+    spec:
+      containers:
+      - name: mqtt-sensor-hydroquebec
+        image: registry.gitlab.com/ttblt-hass/pyhydroquebec/mqtt:latest
+        volumeMounts:
+        - name: pyhydroquebec-config
+          mountPath: /etc/pyhydroquebec.yaml
+          subPath: pyhydroquebec.yaml
+        env:
+        - name: MQTT_USERNAME
+          value: hass
+        - name: MQTT_PASSWORD
+          value: hass
+        - name: MQTT_HOST
+          value: 192.168.0.1
+        - name: MQTT_PORT
+          value: "1883"
+        - name: ROOT_TOPIC
+          value: homeassistant
+        - name: MQTT_NAME
+          value: hydroquebec
+        - name: LOG_LEVEL
+          value: INFO
+        - name: CONFIG
+          value: /etc/pyhydroquebec.yaml
+      volumes:
+      - name: pyhydroquebec-config
+        configMap:
+          # Provide the name of the ConfigMap containing the files you want
+          # to add to the container
+          name: pyhydroquebec
