@@ -55,10 +55,31 @@ async def list_contracts(client):
             for c in client.customers]
 
 
-async def fetch_data_detailled_energy_use(client, start_date, end_date):
+async def fetch_data_detailled_energy_use(client, contract_id, start_date, end_date):
     """Fetch hourly data for a given period."""
-    # TODO
-    raise Exception("FIXME")
+    if start_date is None:
+        start_date = datetime.now(HQ_TIMEZONE) - timedelta(days=1)
+    if end_date is None:
+        end_date = datetime.now(HQ_TIMEZONE)
+
+    await client.login()
+    for customer in client.customers:
+        if customer.contract_id != contract_id and contract_id is not None:
+            continue
+        if contract_id is None:
+            client.logger.warn("Contract id not specified, using first available.")
+
+        await customer.fetch_current_period()
+
+        dates = [(start_date + timedelta(n))
+            for n in range(int((end_date - start_date).days))]
+
+        for date in dates:
+            # Get Hourly data
+            day_date = date.strftime("%Y-%m-%d")
+            await customer.fetch_hourly_data(day=day_date)
+
+        return customer
 
 
 def main():
@@ -139,7 +160,7 @@ def main():
     else:
         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-        async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
+        async_func = fetch_data_detailled_energy_use(client, hydro_contract, start_date, end_date)
 
     # Fetch data
     try:
@@ -158,11 +179,11 @@ def main():
             print("Contract: {contract_id}\n\t"
                   "Account: {account_id}\n\t"
                   "Customer: {customer_id}".format(**customer))
-    elif args.dump_data:
+    elif args.dump_data or args.detailled_energy:
         pprint(results[0].__dict__)
     elif args.influxdb:
         output_influx(results[0])
-    elif args.json or args.detailled_energy:
+    elif args.json:
         output_json(results[0])
     else:
         output_text(results[0], args.hourly)

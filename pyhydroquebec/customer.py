@@ -39,6 +39,8 @@ class Customer():
         self._current_daily_data = {}
         self._compare_daily_data = {}
         self._hourly_data = {}
+        self._hourly_data_raw = {}
+        self._all_periods_raw = []
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
     async def fetch_summary(self):
@@ -77,6 +79,23 @@ class Customer():
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
         """
+
+        await self.fetch_all_periods_raw()
+
+        self._logger.info("Fetching current period data")
+       
+        json_res = self._all_periods_raw[0]
+
+        self._current_period = {}
+        for key, data in CURRENT_MAP.items():
+            self._current_period[key] = json_res[data['raw_name']]
+    
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    async def fetch_all_periods_raw(self):
+        """Fetch data of all the periods and stored it in raw states
+
+        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
+        """
         self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
 
@@ -86,11 +105,9 @@ class Customer():
         res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
         text_res = await res.text()
         # We can not use res.json() because the response header are not application/json
-        json_res = json.loads(text_res)['results'][0]
+        json_res = json.loads(text_res)['results']
 
-        self._current_period = {}
-        for key, data in CURRENT_MAP.items():
-            self._current_period[key] = json_res[data['raw_name']]
+        self._all_periods_raw = json_res
 
     @property
     def current_period(self):
@@ -276,6 +293,13 @@ class Customer():
         for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
             tmp_hour_dict[hour]['average_temperature'] = temp
 
+        raw_hourly_weather_data = []
+        if not json_res.get('results'):
+            # Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
+            raw_hourly_weather_data = [None]*24
+        else:
+            raw_hourly_weather_data = json_res['results'][0]['listeTemperaturesHeure']
+
         params = {"date": day_str}
         res = await self._client.http_request(HOURLY_DATA_URL_1, "get", params=params)
         # We can not use res.json() because the response header are not application/json
@@ -285,6 +309,13 @@ class Customer():
             tmp_hour_dict[hour]['higher_price_consumption'] = data['consoHaut']
             tmp_hour_dict[hour]['total_consumption'] = data['consoTotal']
         self._hourly_data[day_str]['hours'] = tmp_hour_dict.copy()
+
+        #Also copy the raw hourly data from hydroquebec (This can be used later for commercial accounts, mostly 15 minutes power data)
+        self._hourly_data_raw[day_str] = {
+            'Energy': json_res['results']['listeDonneesConsoEnergieHoraire'],
+            'Power': json_res['results']['listeDonneesConsoPuissanceHoraire'],
+            'Weather': raw_hourly_weather_data
+        }
 
     @property
     def hourly_data(self):
