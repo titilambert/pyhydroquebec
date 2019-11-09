@@ -260,18 +260,27 @@ class Customer():
         # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
 
-        self._hourly_data[day_str] = {
-                'day_mean_temp': json_res['results'][0]['tempMoyJour'],
-                'day_min_temp': json_res['results'][0]['tempMinJour'],
-                'day_max_temp': json_res['results'][0]['tempMaxJour'],
-                'hours': {},
-                }
-        tmp_hour_dict = dict((h, {}) for h in range(24))
-        for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
-            tmp_hour_dict[hour]['average_temperature'] = temp
+        if len(json_res.get('results')) == 0:
+            self._hourly_data[day_str] = {
+                    'day_mean_temp': None,
+                    'day_min_temp': None,
+                    'day_max_temp': None,
+                    'hours': {},
+                    }
+            tmp_hour_dict = dict((h, {'average_temperature':None}) for h in range(24))
+        else:
+            self._hourly_data[day_str] = {
+                    'day_mean_temp': json_res['results'][0]['tempMoyJour'],
+                    'day_min_temp': json_res['results'][0]['tempMinJour'],
+                    'day_max_temp': json_res['results'][0]['tempMaxJour'],
+                    'hours': {},
+                    }
+            tmp_hour_dict = dict((h, {}) for h in range(24))
+            for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
+                tmp_hour_dict[hour]['average_temperature'] = temp
 
         raw_hourly_weather_data = []
-        if not json_res.get('results'):
+        if len(json_res.get('results')) == 0:
             # Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
             raw_hourly_weather_data = [None]*24
         else:
