@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 import cachetools
 
 from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
-                                  CONTRACT_CURRENT_URL_2, CONTRACT_URL_3,
+                                  CONTRACT_CURRENT_URL_2, CONTRACT_CURRENT_URL_3,
+                                  CONTRACT_URL_3, CONTRACT_URL_4,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
@@ -42,32 +43,6 @@ class Customer():
         self._hourly_data_raw = {}
         self._all_periods_raw = []
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
-    async def fetch_summary(self):
-        """Fetch data from overview page.
-
-        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/gerer-mon-compte
-        """
-        self._logger.info("Fetching summary page")
-        await self._client.select_customer(self.account_id, self.customer_id)
-
-        res = await self._client.http_request(CONTRACT_URL_3, "get")
-        content = await res.text()
-        soup = BeautifulSoup(content, 'html.parser')
-        raw_balance = soup.find('p', {'class': 'solde'}).text
-        self._balance = float(raw_balance[:-2].replace(",", ".").
-                              replace("\xa0", ""))
-
-        raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        self.contract_id = (raw_contract_id
-                            .split("Contrat", 1)[-1]
-                            .replace("\t", "")
-                            .replace("\n", ""))
-
-        # Needs to load the consumption profile page to not break
-        # the next loading of the other pages
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
-
     @property
     def balance(self):
         """Return the collected balance."""
@@ -99,7 +74,9 @@ class Customer():
         self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
 
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        params = {'idContrat': '0' + self.contract_id}
+        res = await self._client.http_request(CONTRACT_CURRENT_URL_3, "get", params=params)
+        text_res = await res.text()
 
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
@@ -321,3 +298,62 @@ class Customer():
     def hourly_data(self):
         """Return collected hourly data."""
         return self._hourly_data
+
+@cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+async def create_customers_from_summary(client, account_id, customer_id, timeout, logger):
+    """Create all customers objects inside a list."""
+    logger.info("Fetching summary page")
+
+    customers = []
+
+    await client.select_customer(account_id, customer_id)
+
+    res = await client.http_request(CONTRACT_URL_3, "get")
+    content = await res.text()
+    soup = BeautifulSoup(content, 'html.parser')
+
+    #1st determine if it's a multi contract holder
+    if soup.find('h2', {'class': 'entete-multi-compte'}):
+        #It's a multi account so we need to create multiple customer objects
+        accounts = soup.find_all('article', {'class': 'compte'})
+        for account in accounts:
+            account_ncc = account.get('id')[7:]
+            raw_balance = account.find('p', {'class': 'solde'}).text
+            balance = float(raw_balance[:-2].replace(",", ".").
+                            replace("\xa0", ""))
+            #time to get the contract id from the special ajax request
+            params = {'ncc':account_ncc}
+            res2 = await  client.http_request(CONTRACT_URL_4, "get",
+                            params=params)
+            content2 = await res2.text()
+            soup2 = BeautifulSoup(content2, 'html.parser')
+            raw_contract_id = soup2.find('div', {'class': 'contrat'}).text
+            contract_id = (raw_contract_id
+                        .split("Contrat", 1)[-1]
+                        .replace("\t", "")
+                        .replace("\n", ""))
+            #Time to create the customer object
+            customer = Customer(client, account_id, customer_id, timeout, logger)
+            customer.contract_id = contract_id
+            customer._balance = balance
+            customers.append(customer)
+    else:
+        raw_balance = soup.find('p', {'class': 'solde'}).text
+        balance = float(raw_balance[:-2].replace(",", ".").
+                            replace("\xa0", ""))
+
+        raw_contract_id = soup.find('div', {'class': 'contrat'}).text
+        contract_id = (raw_contract_id
+                            .split("Contrat", 1)[-1]
+                            .replace("\t", "")
+                            .replace("\n", ""))
+        customer = Customer(client, account_id, customer_id, timeout, logger)
+        customer.contract_id = contract_id
+        customer._balance = balance
+        customers.append(customer)
+    
+    # Needs to load the consumption profile page to not break
+    # the next loading of the other pages
+    await client.http_request(CONTRACT_CURRENT_URL_1, "get")
+
+    return customers

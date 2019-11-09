@@ -1,5 +1,6 @@
 """PyHydroQuebec Entrypoint Module."""
 
+import traceback
 import argparse
 import asyncio
 from datetime import datetime, timedelta
@@ -14,9 +15,9 @@ from pyhydroquebec.mqtt_daemon import MqttHydroQuebec
 from pyhydroquebec.__version__ import VERSION
 
 
-async def fetch_data(client, contract_id, fetch_hourly=False):
+async def fetch_data(client, contract_id, client_number=None, fetch_hourly=False):
     """Fetch data for basic report."""
-    await client.login()
+    await client.login(client_number)
     for customer in client.customers:
         if customer.contract_id != contract_id and contract_id is not None:
             continue
@@ -55,14 +56,14 @@ async def list_contracts(client):
             for c in client.customers]
 
 
-async def fetch_data_detailled_energy_use(client, contract_id, start_date, end_date):
+async def fetch_data_detailled_energy_use(client, contract_id, client_number=None, start_date=None, end_date=None):
     """Fetch hourly data for a given period."""
     if start_date is None:
         start_date = datetime.now(HQ_TIMEZONE) - timedelta(days=1)
     if end_date is None:
         end_date = datetime.now(HQ_TIMEZONE)
 
-    await client.login()
+    await client.login(client_number)
     for customer in client.customers:
         if customer.contract_id != contract_id and contract_id is not None:
             continue
@@ -95,6 +96,8 @@ def main():
                         default=False, help='InfluxDb output')
     parser.add_argument('-c', '--contract',
                         default=None, help='Contract number')
+    parser.add_argument('--client-number',
+                        default=None, help='Use client Number to speed up login')
     parser.add_argument('-l', '--list-contracts', action='store_true',
                         default=False, help='List all your contracts')
     parser.add_argument('-H', '--hourly', action='store_true',
@@ -131,6 +134,7 @@ def main():
     hydro_user = os.environ.get("PYHQ_USER")
     hydro_pass = os.environ.get("PYHQ_PASSWORD")
     hydro_contract = os.environ.get("PYHQ_CONTRACT")
+    hydro_client_number = os.environ.get("PYHQ_CLIENT_NUMBER")
 
     # Check Cli
     if args.username:
@@ -139,6 +143,8 @@ def main():
         hydro_pass = args.password
     if args.contract:
         hydro_contract = args.contract
+    if args.client_number:
+        hydro_client_number = args.client_number
 
     if not hydro_user or not hydro_pass:
         parser.print_usage()
@@ -156,17 +162,18 @@ def main():
     elif args.dump_data:
         async_func = dump_data(client, hydro_contract)
     elif args.detailled_energy is False:
-        async_func = fetch_data(client, hydro_contract, args.hourly)
+        async_func = fetch_data(client, hydro_contract, hydro_client_number, args.hourly)
     else:
         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-        async_func = fetch_data_detailled_energy_use(client, hydro_contract, start_date, end_date)
+        async_func = fetch_data_detailled_energy_use(client, hydro_contract, hydro_client_number, start_date, end_date)
 
     # Fetch data
     try:
         results = loop.run_until_complete(asyncio.gather(async_func))
     except BaseException as exp:
         print(exp)
+        print(traceback.print_tb(exp.__traceback__))
         return 1
     finally:
         close_fut = asyncio.wait([client.close_session()])
