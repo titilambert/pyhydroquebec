@@ -42,7 +42,7 @@ class Customer():
         self._hourly_data = {}
         self._hourly_data_raw = {}
         self._all_periods_raw = []
-
+        
     @property
     def balance(self):
         """Return the collected balance."""
@@ -326,40 +326,46 @@ async def create_customers_from_summary(client, account_id, customer_id, timeout
         #It's a multi account so we need to create multiple customer objects
         accounts = soup.find_all('article', {'class': 'compte'})
         for account in accounts:
-            account_ncc = account.get('id')[7:]
-            raw_balance = account.find('p', {'class': 'solde'}).text
+            try:
+                account_ncc = account.get('id')[7:]
+                raw_balance = account.find('p', {'class': 'solde'}).text
+                balance = float(raw_balance[:-2].replace(",", ".").
+                                replace("\xa0", ""))
+                #time to get the contract id from the special ajax request
+                params = {'ncc':account_ncc}
+                res2 = await  client.http_request(CONTRACT_URL_4, "get",
+                                params=params)
+                content2 = await res2.text()
+                soup2 = BeautifulSoup(content2, 'html.parser')
+                raw_contract_id = soup2.find('div', {'class': 'contrat'}).text
+                contract_id = (raw_contract_id
+                            .split("Contrat", 1)[-1]
+                            .replace("\t", "")
+                            .replace("\n", ""))
+                #Time to create the customer object
+                customer = Customer(client, account_id, customer_id, timeout, logger)
+                customer.contract_id = contract_id
+                customer._balance = balance
+                customers.append(customer)
+            except AttributeError:
+                logger.info("Customer has no contract")
+    else:
+        try:
+            raw_balance = soup.find('p', {'class': 'solde'}).text
             balance = float(raw_balance[:-2].replace(",", ".").
-                            replace("\xa0", ""))
-            #time to get the contract id from the special ajax request
-            params = {'ncc':account_ncc}
-            res2 = await  client.http_request(CONTRACT_URL_4, "get",
-                            params=params)
-            content2 = await res2.text()
-            soup2 = BeautifulSoup(content2, 'html.parser')
-            raw_contract_id = soup2.find('div', {'class': 'contrat'}).text
+                                replace("\xa0", ""))
+
+            raw_contract_id = soup.find('div', {'class': 'contrat'}).text
             contract_id = (raw_contract_id
-                        .split("Contrat", 1)[-1]
-                        .replace("\t", "")
-                        .replace("\n", ""))
-            #Time to create the customer object
+                                .split("Contrat", 1)[-1]
+                                .replace("\t", "")
+                                .replace("\n", ""))
             customer = Customer(client, account_id, customer_id, timeout, logger)
             customer.contract_id = contract_id
             customer._balance = balance
             customers.append(customer)
-    else:
-        raw_balance = soup.find('p', {'class': 'solde'}).text
-        balance = float(raw_balance[:-2].replace(",", ".").
-                            replace("\xa0", ""))
-
-        raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        contract_id = (raw_contract_id
-                            .split("Contrat", 1)[-1]
-                            .replace("\t", "")
-                            .replace("\n", ""))
-        customer = Customer(client, account_id, customer_id, timeout, logger)
-        customer.contract_id = contract_id
-        customer._balance = balance
-        customers.append(customer)
+        except AttributeError:
+            logger.info("Customer has no contract")
     
     # Needs to load the consumption profile page to not break
     # the next loading of the other pages
