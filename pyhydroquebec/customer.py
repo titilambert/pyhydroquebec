@@ -116,7 +116,9 @@ class Customer():
 
         for key, raw_key in ANNUAL_MAP:
             self._current_annual_data[key] = json_res['courant'][raw_key]
-            self._compare_annual_data[key] = json_res['compare'][raw_key]
+
+            if 'compare' in json_res:
+                self._compare_annual_data[key] = json_res['compare'][raw_key]
 
     @property
     def current_annual_data(self):
