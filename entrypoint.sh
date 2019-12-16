@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Copy config file if does not exists
+rsync -a -v --ignore-existing config.yaml.sample config/config.yaml
+
 # Check user and password
 if [ -z "$PYHQ_USER" ] || [ -z "$PYHQ_PASSWORD" ]  && [ "$PYHQ_OUTPUT" != "MQTT" ]
 then
