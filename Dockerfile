@@ -1,18 +1,25 @@
-FROM python:3.7-alpine
+FROM python:3.7.5-alpine
 
-RUN apk add --no-cache gcc musl-dev
+RUN mkdir -p /usr/pyhydroquebec
 
-WORKDIR /usr/src/app
+RUN mkdir -p /usr/pyhydroquebec/config
 
-COPY requirements.txt ./
+WORKDIR /usr/pyhydroquebec
+
+COPY . ./
+
+RUN ls -a config/
+
+RUN apk add --no-cache gcc musl-dev rsync
+
 RUN pip install -r requirements.txt --force-reinstall --no-cache-dir
-
-COPY ./entrypoint.sh .
-
-COPY . .
-
-RUN ["chmod", "+x", "./entrypoint.sh"]
 
 RUN python setup.py install
 
-CMD [ "./entrypoint.sh" ]
+RUN chmod +x ./entrypoint.sh
+
+ENV PYHQ_OUTPUT MQTT
+
+ENV CONFIG /usr/pyhydroquebec/config/config.yaml
+
+CMD ./entrypoint.sh

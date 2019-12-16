@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+    pyhydroquebec:
+        build: .
+        container_name: pyhydroquebec
+        restart: unless-stopped
+        volumes:
+        - /docker/pyhydroquebec:/usr/pyhydroquebec/config
+        environment:
+        - MQTT_USERNAME=USERNAME
+        - MQTT_PASSWORD=PASSWORD
+        - MQTT_HOST=192.168.0.1
+        - MQTT_PORT=1883
+        - ROOT_TOPIC=homeassistant
+        - MQTT_NAME=hydroquebec
+        - LOG_LEVEL=INFO
