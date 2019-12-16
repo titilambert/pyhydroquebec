@@ -62,18 +62,38 @@ Print help
 MQTT DAEMON
 ###########
 
-NOT WORKING FOR NOW
+Create configuration file.
 
 ::
 
-   cp config.yaml.sample config.yaml
+    mkdir -p /docker/pyhydroquebec
+    cp config.yaml.sample /docker/pyhydroquebec/config.yaml
 
-Edit config.yaml
+Paste and edit configuration parameters [username, password, id].
 
 ::
 
-    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml mqtt_pyhydroquebec
+    # THIS YAML CAN CHANGE IN THE FUTURE
+    timeout: 30
+    # 6 hours
+    frequency: 8640
+    accounts:
+    - username: USERNAME@EMAIL
+      password: PASSWORD
+      contracts:
+        - id: CONTRACT_ID
 
+Edit docker-compose parameters [MQTT_USERNAME, MQTT_PASSWORD, MQTT_HOST, MQTT_PORT].
+
+::
+
+    nano docker-compose.yaml
+
+Deploy with docker-compose.
+
+::
+
+    docker-compose -f docker-compose.yaml up -d
 
 
 Docker
