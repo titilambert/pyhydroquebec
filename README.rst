@@ -69,8 +69,7 @@ Create configuration file.
     mkdir -p /docker/pyhydroquebec
     cp config.yaml.sample /docker/pyhydroquebec/config.yaml
 
-
-Paste and edit config.yaml configuration parameters [username, password, id].
+Edit configuration parameters [username, password, id].
 
 ::
 
