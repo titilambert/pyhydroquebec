@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 import cachetools
 
 from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
-                                  CONTRACT_CURRENT_URL_2, CONTRACT_URL_3,
+                                  CONTRACT_CURRENT_URL_2, CONTRACT_CURRENT_URL_3,
+                                  CONTRACT_URL_3, CONTRACT_URL_4,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
@@ -39,33 +40,9 @@ class Customer():
         self._current_daily_data = {}
         self._compare_daily_data = {}
         self._hourly_data = {}
-
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
-    async def fetch_summary(self):
-        """Fetch data from overview page.
-
-        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/gerer-mon-compte
-        """
-        self._logger.info("Fetching summary page")
-        await self._client.select_customer(self.account_id, self.customer_id)
-
-        res = await self._client.http_request(CONTRACT_URL_3, "get")
-        content = await res.text()
-        soup = BeautifulSoup(content, 'html.parser')
-        raw_balance = soup.find('p', {'class': 'solde'}).text
-        self._balance = float(raw_balance[:-2].replace(",", ".").
-                              replace("\xa0", ""))
-
-        raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        self.contract_id = (raw_contract_id
-                            .split("Contrat", 1)[-1]
-                            .replace("\t", "")
-                            .replace("\n", ""))
-
-        # Needs to load the consumption profile page to not break
-        # the next loading of the other pages
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
-
+        self._hourly_data_raw = {}
+        self._all_periods_raw = []
+        
     @property
     def balance(self):
         """Return the collected balance."""
@@ -77,20 +54,37 @@ class Customer():
 
         UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
         """
+
+        await self.fetch_all_periods_raw()
+
+        self._logger.info("Fetching current period data")
+       
+        json_res = self._all_periods_raw[0]
+
+        self._current_period = {}
+        for key, data in CURRENT_MAP.items():
+            self._current_period[key] = json_res[data['raw_name']]
+    
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    async def fetch_all_periods_raw(self):
+        """Fetch data of all the periods and stored it in raw states
+
+        UI URL: https://session.hydroquebec.com/portail/en/group/clientele/portrait-de-consommation
+        """
         self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
 
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        params = {'idContrat': '0' + self.contract_id}
+        res = await self._client.http_request(CONTRACT_CURRENT_URL_3, "get", params=params)
+        text_res = await res.text()
 
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
         text_res = await res.text()
         # We can not use res.json() because the response header are not application/json
-        json_res = json.loads(text_res)['results'][0]
+        json_res = json.loads(text_res)['results']
 
-        self._current_period = {}
-        for key, data in CURRENT_MAP.items():
-            self._current_period[key] = json_res[data['raw_name']]
+        self._all_periods_raw = json_res
 
     @property
     def current_period(self):
@@ -266,15 +260,31 @@ class Customer():
         # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
 
-        self._hourly_data[day_str] = {
-                'day_mean_temp': json_res['results'][0]['tempMoyJour'],
-                'day_min_temp': json_res['results'][0]['tempMinJour'],
-                'day_max_temp': json_res['results'][0]['tempMaxJour'],
-                'hours': {},
-                }
-        tmp_hour_dict = dict((h, {}) for h in range(24))
-        for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
-            tmp_hour_dict[hour]['average_temperature'] = temp
+        if len(json_res.get('results')) == 0:
+            self._hourly_data[day_str] = {
+                    'day_mean_temp': None,
+                    'day_min_temp': None,
+                    'day_max_temp': None,
+                    'hours': {},
+                    }
+            tmp_hour_dict = dict((h, {'average_temperature':None}) for h in range(24))
+        else:
+            self._hourly_data[day_str] = {
+                    'day_mean_temp': json_res['results'][0]['tempMoyJour'],
+                    'day_min_temp': json_res['results'][0]['tempMinJour'],
+                    'day_max_temp': json_res['results'][0]['tempMaxJour'],
+                    'hours': {},
+                    }
+            tmp_hour_dict = dict((h, {}) for h in range(24))
+            for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
+                tmp_hour_dict[hour]['average_temperature'] = temp
+
+        raw_hourly_weather_data = []
+        if len(json_res.get('results')) == 0:
+            # Missing Temperature data from Hydro-Quebec (but don't crash the app for that)
+            raw_hourly_weather_data = [None]*24
+        else:
+            raw_hourly_weather_data = json_res['results'][0]['listeTemperaturesHeure']
 
         params = {"date": day_str}
         res = await self._client.http_request(HOURLY_DATA_URL_1, "get", params=params)
@@ -286,7 +296,79 @@ class Customer():
             tmp_hour_dict[hour]['total_consumption'] = data['consoTotal']
         self._hourly_data[day_str]['hours'] = tmp_hour_dict.copy()
 
+        #Also copy the raw hourly data from hydroquebec (This can be used later for commercial accounts, mostly 15 minutes power data)
+        self._hourly_data_raw[day_str] = {
+            'Energy': json_res['results']['listeDonneesConsoEnergieHoraire'],
+            'Power': json_res['results']['listeDonneesConsoPuissanceHoraire'],
+            'Weather': raw_hourly_weather_data
+        }
+
     @property
     def hourly_data(self):
         """Return collected hourly data."""
         return self._hourly_data
+
+@cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+async def create_customers_from_summary(client, account_id, customer_id, timeout, logger):
+    """Create all customers objects inside a list."""
+    logger.info("Fetching summary page")
+
+    customers = []
+
+    await client.select_customer(account_id, customer_id)
+
+    res = await client.http_request(CONTRACT_URL_3, "get")
+    content = await res.text()
+    soup = BeautifulSoup(content, 'html.parser')
+
+    #1st determine if it's a multi contract holder
+    if soup.find('h2', {'class': 'entete-multi-compte'}):
+        #It's a multi account so we need to create multiple customer objects
+        accounts = soup.find_all('article', {'class': 'compte'})
+        for account in accounts:
+            try:
+                account_ncc = account.get('id')[7:]
+                raw_balance = account.find('p', {'class': 'solde'}).text
+                balance = float(raw_balance[:-2].replace(",", ".").
+                                replace("\xa0", ""))
+                #time to get the contract id from the special ajax request
+                params = {'ncc':account_ncc}
+                res2 = await  client.http_request(CONTRACT_URL_4, "get",
+                                params=params)
+                content2 = await res2.text()
+                soup2 = BeautifulSoup(content2, 'html.parser')
+                raw_contract_id = soup2.find('div', {'class': 'contrat'}).text
+                contract_id = (raw_contract_id
+                            .split("Contrat", 1)[-1]
+                            .replace("\t", "")
+                            .replace("\n", ""))
+                #Time to create the customer object
+                customer = Customer(client, account_id, customer_id, timeout, logger)
+                customer.contract_id = contract_id
+                customer._balance = balance
+                customers.append(customer)
+            except AttributeError:
+                logger.info("Customer has no contract")
+    else:
+        try:
+            raw_balance = soup.find('p', {'class': 'solde'}).text
+            balance = float(raw_balance[:-2].replace(",", ".").
+                                replace("\xa0", ""))
+
+            raw_contract_id = soup.find('div', {'class': 'contrat'}).text
+            contract_id = (raw_contract_id
+                                .split("Contrat", 1)[-1]
+                                .replace("\t", "")
+                                .replace("\n", ""))
+            customer = Customer(client, account_id, customer_id, timeout, logger)
+            customer.contract_id = contract_id
+            customer._balance = balance
+            customers.append(customer)
+        except AttributeError:
+            logger.info("Customer has no contract")
+    
+    # Needs to load the consumption profile page to not break
+    # the next loading of the other pages
+    await client.http_request(CONTRACT_CURRENT_URL_1, "get")
+
+    return customers

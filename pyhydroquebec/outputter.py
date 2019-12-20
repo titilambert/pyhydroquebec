@@ -14,8 +14,10 @@ from pyhydroquebec.consts import (OVERVIEW_TPL,
 def output_text(customer, show_hourly=False):
     """Format data to get a readable output."""
     print(OVERVIEW_TPL.format(customer))
-    print(CONSUMPTION_PROFILE_TPL.format(d=customer.current_period))
-    print(ANNUAL_TPL.format(d=customer.current_annual_data))
+    if customer.current_period['period_total_bill']:
+        print(CONSUMPTION_PROFILE_TPL.format(d=customer.current_period))
+    if customer.current_annual_data:
+        print(ANNUAL_TPL.format(d=customer.current_annual_data))
     yesterday_date = list(customer.current_daily_data.keys())[0]
     data = {'date': yesterday_date}
     data.update(customer.current_daily_data[yesterday_date])

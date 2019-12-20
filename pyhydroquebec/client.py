@@ -8,7 +8,7 @@ import logging
 
 import aiohttp
 
-from pyhydroquebec.customer import Customer
+from pyhydroquebec.customer import create_customers_from_summary
 from pyhydroquebec.error import PyHydroQuebecHTTPError, PyHydroQuebecError
 from pyhydroquebec.consts import (REQUESTS_TIMEOUT, CONTRACT_URL_1, CONTRACT_URL_2,
                                   CONTRACT_URL_3, CONTRACT_CURRENT_URL_1, LOGIN_URL_3,
@@ -94,10 +94,6 @@ class HydroQuebecClient():
         if force and "cl-ec-spring.hydroquebec.com" in self.cookies:
             del self.cookies["cl-ec-spring.hydroquebec.com"]
 
-        customers = [c for c in self._customers if c.customer_id == customer_id]
-        if not customers:
-            raise PyHydroQuebecError("Customer ID {} not found.".format(customer_id))
-
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + self.access_token,
@@ -132,8 +128,9 @@ class HydroQuebecClient():
         if self._session is None:
             self._session = aiohttp.ClientSession(requote_redirect_url=False,)
 
-    async def login(self):
+    async def login(self, client_number = None):
         """Log in HydroQuebec website.
+        Client number is used to speed up the contracts listing by just getting the one you need
 
         Hydroquebec is using ForgeRock solution for authentication.
         """
@@ -225,10 +222,13 @@ class HydroQuebecClient():
             account_id = account['noPartenaireDemandeur']
             customer_id = account['noPartenaireTitulaire']
 
+            #if we have the client number Id we can skip all unnecessary customers
+            if (client_number is not None) and (int(customer_id) != int(client_number)):
+                continue
+
             customer_logger = self.logger.getChild('customer')
-            customer = Customer(self, account_id, customer_id, self._timeout, customer_logger)
-            self._customers.append(customer)
-            await customer.fetch_summary()
+            customers = await create_customers_from_summary(self, account_id, customer_id, self._timeout, customer_logger)
+            self._customers += customers
 
     @property
     def customers(self):
