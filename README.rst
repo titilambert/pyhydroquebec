@@ -62,17 +62,23 @@ Print help
 MQTT DAEMON
 ###########
 
-NOT WORKING FOR NOW
-
 ::
 
    cp config.yaml.sample config.yaml
+
+Note: If 'frequency' is not set the "daemon" will collect the data only one time and stop
 
 Edit config.yaml
 
 ::
 
     MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml mqtt_pyhydroquebec
+
+
+With Docker
+
+::
+    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master
 
 
 
@@ -83,7 +89,7 @@ Docker image list: https://gitlab.com/ttblt-hass/pyhydroquebec/container_registr
 
 ::
 
-    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** registry.gitlab.com/ttblt-hass/pyhydroquebec/cli:master
+    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** registry.gitlab.com/ttblt-hass/pyhydroquebec:master
 
 Docker variables
 """""""""
