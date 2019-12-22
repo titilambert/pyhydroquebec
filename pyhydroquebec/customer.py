@@ -23,7 +23,7 @@ class Customer():
     """
 
     def __init__(self, client, account_id, customer_id, timeout, logger):
-        """Constructor."""
+        """Create new Customer object."""
         self._client = client
         self.account_id = account_id
         self.customer_id = customer_id

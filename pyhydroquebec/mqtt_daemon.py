@@ -34,7 +34,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
     frequency = None
 
     def __init__(self):
-        """Constructor."""
+        """Create new MqttHydroQuebec Object."""
         mqtt_hass_base.MqttDevice.__init__(self, "mqtt-hydroquebec")
 
     def read_config(self):
