@@ -52,15 +52,19 @@ class Customer():
         res = await self._client.http_request(CONTRACT_URL_3, "get")
         content = await res.text()
         soup = BeautifulSoup(content, 'html.parser')
-        raw_balance = soup.find('p', {'class': 'solde'}).text
-        self._balance = float(raw_balance[:-2].replace(",", ".").
-                              replace("\xa0", ""))
+        try:
+            raw_balance = soup.find('p', {'class': 'solde'}).text
+            self._balance = float(raw_balance[:-2].replace(",", ".").
+                                  replace("\xa0", ""))
 
-        raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-        self.contract_id = (raw_contract_id
-                            .split("Contrat", 1)[-1]
-                            .replace("\t", "")
-                            .replace("\n", ""))
+            raw_contract_id = soup.find('div', {'class': 'contrat'}).text
+            self.contract_id = (raw_contract_id
+                                .split("Contrat", 1)[-1]
+                                .replace("\t", "")
+                                .replace("\n", ""))
+
+        except AttributeError:
+            self._logger.info("Customer has no contract")
 
         # Needs to load the consumption profile page to not break
         # the next loading of the other pages
