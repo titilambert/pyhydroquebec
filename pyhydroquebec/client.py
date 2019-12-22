@@ -237,4 +237,5 @@ class HydroQuebecClient():
 
     async def close_session(self):
         """Close current session."""
-        await self._session.close()
+        if self._session is not None:
+            await self._session.close()
