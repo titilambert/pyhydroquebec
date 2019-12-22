@@ -43,7 +43,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
             self.config = load(fhc, Loader=Loader)
         self.timeout = self.config.get('timeout', 30)
         # 6 hours
-        self.frequency = self.config.get('frequency', 8640)
+        self.frequency = self.config.get('frequency', None)
 
     async def _init_main_loop(self):
         """Init before starting main loop."""
@@ -155,6 +155,11 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                             payload=customer.current_daily_data[yesterday_str][data_name])
 
             await client.close_session()
+
+        if self.frequency is None:
+            self.logger.info("Frequency is None, so it's a one shot run")
+            self.must_run = False
+            return
 
         self.logger.info("Waiting for %d seconds before the next check", self.frequency)
         i = 0
