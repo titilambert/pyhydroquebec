@@ -120,7 +120,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
 
                 # Balance
                 # Publish sensor
-                balance_topic = self._publish_sensor('balance', customer.account_id,
+                balance_topic = self._publish_sensor('balance', customer.contract_id,
                                                      unit="$", device_class=None,
                                                      icon="mdi:currency-usd")
                 # Send sensor data
