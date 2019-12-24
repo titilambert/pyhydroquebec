@@ -1,4 +1,4 @@
-#############
+config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master#############
 PyHydroQuebec
 #############
 
@@ -29,7 +29,7 @@ Print your current data
 List your current contracts
 
 ::
-
+config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master
     pyhydroquebec -u MYACCOUNT -p MYPASSWORD -l
 
 
@@ -78,6 +78,7 @@ Edit config.yaml
 With Docker
 
 ::
+
     MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master
 
 
