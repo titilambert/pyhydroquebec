@@ -1,4 +1,4 @@
-config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master#############
+#############
 PyHydroQuebec
 #############
 
