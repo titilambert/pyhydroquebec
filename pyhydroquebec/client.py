@@ -150,24 +150,26 @@ class HydroQuebecClient():
         res = await self.http_request(LOGIN_URL_3, "post", headers=headers)
         data = await res.json()
 
-        # Fill the callback template
-        data['callbacks'][0]['input'][0]['value'] = self.username
-        data['callbacks'][1]['input'][0]['value'] = self.password
+        # Check if we are already logged in
+        if 'tokenId' not in data:
+            # Fill the callback template
+            data['callbacks'][0]['input'][0]['value'] = self.username
+            data['callbacks'][1]['input'][0]['value'] = self.password
 
-        data = json_dumps(data)
+            data = json_dumps(data)
 
-        # TODO catch error
-        try:
-            res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
-        except PyHydroQuebecHTTPError:
-            self.logger.critical('Unable to connect. Check your credentials')
-            return
-        json_res = await res.json()
+            # TODO catch error
+            try:
+                res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
+            except PyHydroQuebecHTTPError:
+                self.logger.critical('Unable to connect. Check your credentials')
+                return
+            json_res = await res.json()
 
-        if 'tokenId' not in json_res:
-            self.logger.error("Unable to authenticate."
-                              "You can retry and/or check your credentials.")
-            return
+            if 'tokenId' not in json_res:
+                self.logger.error("Unable to authenticate."
+                                  "You can retry and/or check your credentials.")
+                return
 
         # Find settings for the authorize
         res = await self.http_request(LOGIN_URL_4, "get")
@@ -178,7 +180,7 @@ class HydroQuebecClient():
         client_id = oauth2_config['clientId']
         redirect_uri = oauth2_config['redirectUri']
         scope = oauth2_config['scope']
-        # Generate some ramdon strings
+        # Generate some random strings
         state = "".join(random.choice(string.digits + string.ascii_letters) for i in range(40))
         nonce = state
         # TODO find where this setting comes from
