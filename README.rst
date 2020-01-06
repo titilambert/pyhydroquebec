@@ -29,7 +29,7 @@ Print your current data
 List your current contracts
 
 ::
-config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master
+
     pyhydroquebec -u MYACCOUNT -p MYPASSWORD -l
 
 
@@ -72,35 +72,26 @@ Edit config.yaml
 
 ::
 
-    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml mqtt_pyhydroquebec
-
-
-With Docker
-
-::
-
-    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port CONFIG=config.yaml PYHQ_OUTPUT=MQTT registry.gitlab.com/ttblt-hass/pyhydroquebec:master
-
-
+    MQTT_USERNAME=mqtt_username MQTT_PASSWORD=mqtt_password MQTT_HOST=mqtt_ip MQTT_PORT=mqtt_port PYHQ_CONFIG=config.yaml pyhydroquebec -m
 
 Docker
 ######
 
 Docker image list: https://gitlab.com/ttblt-hass/pyhydroquebec/container_registry
 
-::
+Docker CLI Mode
+""""""""""""""""
 
-    docker run -e PYHQ_USER=*** -e PYHQ_PASSWORD=*** registry.gitlab.com/ttblt-hass/pyhydroquebec:master
+    ::
 
-Docker variables
-"""""""""
+        docker run -e PYHQ_USER=*** -e PYHQ_OUTPUT=mqtt -v config.yaml:/etc/pyhydroquebec/pyhydroquebec.yaml registry.gitlab.com/ttblt-hass/pyhydroquebec:master
 
     **PYHQ_USER** - Required
         `-e PYHQ_USER=myusername`
-    
+
     **PYHQ_PASSWORD** - Required
         `-e PYHQ_PASSWORD=mypassword`    
-    
+
     **PYHQ_OUTPUT**
 
     - `-e PYHQ_OUTPUT=TEXT` - Default
@@ -112,6 +103,27 @@ Docker variables
 
         `-e PYHQ_CONTRACT=332211223`
 
+Docker MQTT Mode
+""""""""""""""""
+
+    ::
+
+        docker run -e MQTT_USERNAME=mqtt_username -e MQTT_PASSWORD=mqtt_password -e MQTT_HOST=127.0.0.1 -e MQTT_PORT=1883 -e PYHQ_OUTPUT=mqtt -v config.yaml:/etc/pyhydroquebec/pyhydroquebec.yaml registry.gitlab.com/ttblt-hass/pyhydroquebec:master
+
+    **MQTT_USERNAME** - Required
+        `-e MQTT_USERNAME=myusername`
+
+    **MQTT_PASSWORD** - Required
+        `-e MQTT_PASSWORD=mypassword`    
+
+    **MQTT_HOST** - Required
+        `-e MQTT_HOST=127.0.0.1`    
+
+    **MQTT_PORT** - Required
+        `-e MQTT_PORT=1883`    
+
+    **PYHQ_CONFIG** - Optional
+        `-e PYHQ_CONFIG=/etc/pyhydroquebec/pyhydroquebec.yaml` 
 
 Dev env
 #######

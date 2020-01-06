@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: mqtt-sensor-hydroquebec
-        image: registry.gitlab.com/ttblt-hass/pyhydroquebec/mqtt:latest
+        image: registry.gitlab.com/ttblt-hass/pyhydroquebec:master
         volumeMounts:
         - name: pyhydroquebec-config
           mountPath: /etc/pyhydroquebec.yaml
@@ -50,7 +50,7 @@ spec:
           value: hydroquebec
         - name: LOG_LEVEL
           value: INFO
-        - name: CONFIG
+        - name: PYHQ_CONFIG
           value: /etc/pyhydroquebec.yaml
       volumes:
       - name: pyhydroquebec-config

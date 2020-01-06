@@ -33,13 +33,14 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
     timeout = None
     frequency = None
 
-    def __init__(self):
+    def __init__(self, mqtt_file):
         """Create new MqttHydroQuebec Object."""
         mqtt_hass_base.MqttDevice.__init__(self, "mqtt-hydroquebec")
+        self.mqtt_file = mqtt_file
 
     def read_config(self):
         """Read config from yaml file."""
-        with open(os.environ['CONFIG']) as fhc:
+        with open(self.mqtt_file) as fhc:
             self.config = load(fhc, Loader=Loader)
         self.timeout = self.config.get('timeout', 30)
         # 6 hours

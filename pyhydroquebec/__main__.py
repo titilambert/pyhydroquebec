@@ -97,12 +97,23 @@ def main():
     raw_group.add_argument('--end-date',
                            default=datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
                            help="End date for detailled-output")
+    mqtt_group = parser.add_argument_group('MQTT daemon configuration')
+    mqtt_group.add_argument('-m', '--mqtt', help='Activate MQTT mode', action='store_true')
+    mqtt_group.add_argument('-mf', '--mqtt-file', help='MQTT Config File')
 
     args = parser.parse_args()
 
     if args.version:
         print(VERSION)
         return 0
+
+    # MQTT or CLI mode
+    if args.mqtt:
+        mqtt_daemon(args, parser)
+    else:
+        run_cli(args, parser)    
+
+def run_cli(args, parser):
 
     # Check input for Username, Password and Contract - CLI overwrite ENV variable
 
@@ -111,7 +122,7 @@ def main():
     hydro_pass = os.environ.get("PYHQ_PASSWORD")
     hydro_contract = os.environ.get("PYHQ_CONTRACT")
 
-    # Check Cli
+    # Check Cli args
     if args.username:
         hydro_user = args.username
     if args.password:
@@ -122,11 +133,12 @@ def main():
     if not hydro_user or not hydro_pass:
         parser.print_usage()
         print("pyhydroquebec: error: the following arguments are required: "
-              "-u/--username, -p/--password")
+              "-u/--username/ENV(PYHQ_USER), -p/--password/ENV(PYHQ_PASSWORD)")
         return 3
 
     client = HydroQuebecClient(hydro_user, hydro_pass,
                                args.timeout, log_level=args.log_level)
+
     loop = asyncio.get_event_loop()
 
     # Get the async_func
@@ -168,12 +180,20 @@ def main():
         output_text(results[0], args.hourly)
     return 0
 
+def mqtt_daemon(args, parser):
+    #Validate input args
+    mqtt_file = os.environ.get("PYHQ_CONFIG")
 
-def mqtt_daemon():
-    """Entrypoint function."""
-    dev = MqttHydroQuebec()
+    if args.mqtt_file:
+        mqtt_file = args.mqtt_file
+
+    if not os.path.isfile(mqtt_file):
+        parser.print_usage()
+        print("pyhydroquebec: error: MQTT config file not found/accessible.")
+        return 3
+
+    dev = MqttHydroQuebec(mqtt_file)
     asyncio.run(dev.async_run())
-
 
 if __name__ == '__main__':
     sys.exit(main())
