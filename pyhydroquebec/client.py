@@ -47,6 +47,7 @@ class HydroQuebecClient():
         self.cookies = {}
         self._selected_customer = None
         self.logger = _get_logger(log_level)
+        self.logger.debug("Loaded llluis' pyHydroQuebec")
 
     async def http_request(self, url, method, params=None, data=None,
                            headers=None, ssl=True, cookies=None, status=200):
@@ -72,6 +73,8 @@ class HydroQuebecClient():
                                                        cookies=cookies,
                                                        headers=headers)
         if raw_res.status != status:
+            self.logger.exception("Exception in http_request")
+            self.logger.debug(raw_res)
             raise PyHydroQuebecHTTPError("Error Fetching {}".format(url))
 
         for cookie, cookie_content in raw_res.cookies.items():
