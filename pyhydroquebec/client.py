@@ -133,7 +133,7 @@ class HydroQuebecClient():
     def _get_httpsession(self):
         """Set http session."""
         #if self._session is None:
-            self._session = aiohttp.ClientSession(requote_redirect_url=False,)
+        self._session = aiohttp.ClientSession(requote_redirect_url=False,)
 
     async def login(self):
         """Log in HydroQuebec website.
