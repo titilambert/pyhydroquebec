@@ -39,15 +39,18 @@ class HydroQuebecClient():
         """Initialize the client object."""
         self.username = username
         self.password = password
-        self._customers = []
-        self._session = None
         self._timeout = timeout
         self.guid = str(uuid.uuid1())
+        self.reset()
+        self.logger = _get_logger(log_level)
+        self.logger.debug("Loaded llluis' pyHydroQuebec")
+
+    def reset(self):
+        self._customers = []
+        self._session = None
         self.access_token = None
         self.cookies = {}
         self._selected_customer = None
-        self.logger = _get_logger(log_level)
-        self.logger.debug("Loaded llluis' pyHydroQuebec")
 
     async def http_request(self, url, method, params=None, data=None,
                            headers=None, ssl=True, cookies=None, status=200):
@@ -140,6 +143,9 @@ class HydroQuebecClient():
 
         Hydroquebec is using ForgeRock solution for authentication.
         """
+        # Reset cache
+        self.reset()
+
         # Get http session
         self._get_httpsession()
         self.logger.info("Log in using %s", self.username)
