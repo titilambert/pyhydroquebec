@@ -35,11 +35,12 @@ class HydroQuebecClient():
     """PyHydroQuebec HTTP Client."""
 
     def __init__(self, username, password, timeout=REQUESTS_TIMEOUT,
-                 log_level='INFO'):
+                 session=None, log_level='INFO'):
         """Initialize the client object."""
         self.username = username
         self.password = password
         self._timeout = timeout
+        self._session = session
         self.guid = str(uuid.uuid1())
         self.reset()
         self.logger = _get_logger(log_level)
@@ -47,7 +48,6 @@ class HydroQuebecClient():
 
     def reset(self):
         self._customers = []
-        self._session = None
         self.access_token = None
         self.cookies = {}
         self._selected_customer = None
@@ -135,8 +135,8 @@ class HydroQuebecClient():
 
     def _get_httpsession(self):
         """Set http session."""
-        #if self._session is None:
-        self._session = aiohttp.ClientSession(requote_redirect_url=False,)
+        if self._session is None:
+            self._session = aiohttp.ClientSession(requote_redirect_url=False,)
 
     async def login(self):
         """Log in HydroQuebec website.
