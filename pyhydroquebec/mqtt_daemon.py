@@ -42,8 +42,9 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         with open(os.environ['CONFIG']) as fhc:
             self.config = load(fhc, Loader=Loader)
         self.timeout = self.config.get('timeout', 30)
-        # 6 hours
         self.frequency = self.config.get('frequency', None)
+        if 'mqtt_root_topic' in self.config:
+            self.mqtt_root_topic = self.config.get('mqtt_root_topic')
 
     async def _init_main_loop(self):
         """Init before starting main loop."""
