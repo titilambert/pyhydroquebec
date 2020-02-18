@@ -28,6 +28,8 @@ CONTRACT_URL_2 = "{}/portail/prive/maj-session/".format(HOST_SPRING)
 CONTRACT_URL_3 = "{}/portail/fr/group/clientele/gerer-mon-compte/".format(HOST_SPRING)
 CONTRACT_URL_4 = ("{}/portail/fr/group/clientele/gerer-mon-compte/"
                   "actionAfficherLieuxDeConsoAjax".format(HOST_SPRING))
+CONTRACT_URL_5 = ("{}/portail/fr/group/clientele/gerer-mon-compte/"
+                  "actionLancerLibreService".format(HOST_SPRING))
 
 CONTRACT_CURRENT_URL_1 = ("{}/portail/fr/group/clientele/"
                           "portrait-de-consommation".format(HOST_SPRING))
@@ -35,6 +37,8 @@ CONTRACT_CURRENT_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommatio
                           "resourceObtenirDonneesPeriodesConsommation".format(HOST_SPRING))
 CONTRACT_CURRENT_URL_3 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
                           "actionAfficherPremierePage".format(HOST_SPRING))
+CONTRACT_CURRENT_URL_4 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                          "actionLancerLibreService".format(HOST_SPRING))
 
 ANNUAL_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
                    "resourceObtenirDonneesConsommationAnnuelles".format(HOST_SPRING))

@@ -7,7 +7,8 @@ import cachetools
 
 from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
                                   CONTRACT_CURRENT_URL_2, CONTRACT_CURRENT_URL_3,
-                                  CONTRACT_URL_3, CONTRACT_URL_4,
+                                  CONTRACT_CURRENT_URL_4, 
+                                  CONTRACT_URL_3, CONTRACT_URL_4, CONTRACT_URL_5,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
@@ -321,7 +322,19 @@ async def create_customers_from_summary(client, account_id, customer_id, timeout
     content = await res.text()
     soup = BeautifulSoup(content, 'html.parser')
 
-    #1st determine if it's a multi contract holder
+    #Add a boolean variable to set correctly the state of the initial page for later
+    more_than_10_contracts_holder = False
+
+    #1st check if we have a more than 10 contracts on that client
+    if  (not soup.find('h2', {'class': 'entete-multi-compte'})
+            and not soup.find('p', {'class': 'solde'})):
+        #load the alternative page for listing all contracts
+        res = await client.http_request(CONTRACT_URL_5, "get")
+        content = await res.text()
+        soup = BeautifulSoup(content, 'html.parser')
+        more_than_10_contracts_holder = True
+
+    #Then determine if it's a multi contract holder
     if soup.find('h2', {'class': 'entete-multi-compte'}):
         #It's a multi account so we need to create multiple customer objects
         accounts = soup.find_all('article', {'class': 'compte'})
@@ -370,5 +383,7 @@ async def create_customers_from_summary(client, account_id, customer_id, timeout
     # Needs to load the consumption profile page to not break
     # the next loading of the other pages
     await client.http_request(CONTRACT_CURRENT_URL_1, "get")
+    if more_than_10_contracts_holder:
+        await client.http_request(CONTRACT_CURRENT_URL_4, "get")
 
     return customers
