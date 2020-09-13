@@ -163,7 +163,7 @@ def main():
     elif args.influxdb:
         output_influx(results[0])
     elif args.json or args.detailled_energy:
-        output_json(results[0])
+        output_json(results[0], args.hourly)
     else:
         output_text(results[0], args.hourly)
     return 0
