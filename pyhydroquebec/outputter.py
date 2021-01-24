@@ -5,6 +5,7 @@ This module defines the different output functions:
 * influxdb
 * json
 """
+import json
 
 from pyhydroquebec.consts import (OVERVIEW_TPL,
                                   CONSUMPTION_PROFILE_TPL,
@@ -66,7 +67,27 @@ def output_influx(contract):
 #        print(msg.format(contract, data, yesterday_str))
 
 
-def output_json(data):
-    """Print data as Json."""
-    raise Exception("FIXME")
-#    print(json.dumps(data))
+def output_json(customer, show_hourly=False):
+    """Print data as a json."""
+    out = {}
+    out['overview'] = {
+        "contract_id": customer.contract_id,
+        "account_id": customer.account_id,
+        "customer_id": customer.customer_id,
+        "balance": customer.balance
+    }
+    if customer.current_period['period_total_bill']:
+        out["current_period"] = customer.current_period
+    if customer.current_annual_data:
+        out["current_annual_data"] = customer.current_annual_data
+    yesterday_date = list(customer.current_daily_data.keys())[0]
+    yesterday_data = {'date': yesterday_date}
+    yesterday_data.update(customer.current_daily_data[yesterday_date])
+    out["yesterday_data"] = yesterday_data
+    if show_hourly:
+        out["hourly_data"] = []
+        for hour, data in customer.hourly_data[yesterday_date]["hours"].items():
+            hourly_object = {"hour": hour}
+            hourly_object.update(data)
+            out["hourly_data"].append(hourly_object)
+    print(json.dumps(out))
