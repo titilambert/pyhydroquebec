@@ -42,11 +42,12 @@ class HydroQuebecClient():
         self._timeout = timeout
         self._session = session
         self.guid = str(uuid.uuid1())
-        self.reset()
         self.logger = _get_logger(log_level)
-        self.logger.debug("Loaded llluis' pyHydroQuebec")
+        self.logger.debug("PyHydroQuebec initialized")
+        self.reset()
 
     def reset(self):
+        """Reset collected data and temporary variable."""
         self._customers = []
         self.access_token = None
         self.cookies = {}
