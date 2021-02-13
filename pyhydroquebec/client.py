@@ -39,14 +39,19 @@ class HydroQuebecClient():
         """Initialize the client object."""
         self.username = username
         self.password = password
-        self._customers = []
-        self._session = session
         self._timeout = timeout
+        self._session = session
         self.guid = str(uuid.uuid1())
+        self.logger = _get_logger(log_level)
+        self.logger.debug("PyHydroQuebec initialized")
+        self.reset()
+
+    def reset(self):
+        """Reset collected data and temporary variable."""
+        self._customers = []
         self.access_token = None
         self.cookies = {}
         self._selected_customer = None
-        self.logger = _get_logger(log_level)
 
     async def http_request(self, url, method, params=None, data=None,
                            headers=None, ssl=True, cookies=None, status=200):
@@ -72,6 +77,8 @@ class HydroQuebecClient():
                                                        cookies=cookies,
                                                        headers=headers)
         if raw_res.status != status:
+            self.logger.exception("Exception in http_request")
+            self.logger.debug(raw_res)
             raise PyHydroQuebecHTTPError("Error Fetching {}".format(url))
 
         for cookie, cookie_content in raw_res.cookies.items():
@@ -137,6 +144,9 @@ class HydroQuebecClient():
 
         Hydroquebec is using ForgeRock solution for authentication.
         """
+        # Reset cache
+        self.reset()
+
         # Get http session
         self._get_httpsession()
         self.logger.info("Log in using %s", self.username)
@@ -150,24 +160,26 @@ class HydroQuebecClient():
         res = await self.http_request(LOGIN_URL_3, "post", headers=headers)
         data = await res.json()
 
-        # Fill the callback template
-        data['callbacks'][0]['input'][0]['value'] = self.username
-        data['callbacks'][1]['input'][0]['value'] = self.password
+        # Check if we are already logged in
+        if 'tokenId' not in data:
+            # Fill the callback template
+            data['callbacks'][0]['input'][0]['value'] = self.username
+            data['callbacks'][1]['input'][0]['value'] = self.password
 
-        data = json_dumps(data)
+            data = json_dumps(data)
 
-        # TODO catch error
-        try:
-            res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
-        except PyHydroQuebecHTTPError:
-            self.logger.critical('Unable to connect. Check your credentials')
-            return
-        json_res = await res.json()
+            # TODO catch error
+            try:
+                res = await self.http_request(LOGIN_URL_3, "post", data=data, headers=headers)
+            except PyHydroQuebecHTTPError:
+                self.logger.critical('Unable to connect. Check your credentials')
+                return
+            json_res = await res.json()
 
-        if 'tokenId' not in json_res:
-            self.logger.error("Unable to authenticate."
-                              "You can retry and/or check your credentials.")
-            return
+            if 'tokenId' not in json_res:
+                self.logger.error("Unable to authenticate."
+                                  "You can retry and/or check your credentials.")
+                return
 
         # Find settings for the authorize
         res = await self.http_request(LOGIN_URL_4, "get")
@@ -178,7 +190,7 @@ class HydroQuebecClient():
         client_id = oauth2_config['clientId']
         redirect_uri = oauth2_config['redirectUri']
         scope = oauth2_config['scope']
-        # Generate some ramdon strings
+        # Generate some random strings
         state = "".join(random.choice(string.digits + string.ascii_letters) for i in range(40))
         nonce = state
         # TODO find where this setting comes from
