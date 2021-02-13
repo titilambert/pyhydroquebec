@@ -9,6 +9,7 @@ from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
                                   CONTRACT_CURRENT_URL_2, CONTRACT_URL_3,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
+                                  COMMON_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
                                   ANNUAL_MAP, CURRENT_MAP,
                                   )
@@ -38,6 +39,7 @@ class Customer():
         self._compare_monthly_data = {}
         self._current_daily_data = {}
         self._compare_daily_data = {}
+        self._current_common_data = {}
         self._hourly_data = {}
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
@@ -296,3 +298,33 @@ class Customer():
     def hourly_data(self):
         """Return collected hourly data."""
         return self._hourly_data
+
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    async def fetch_common_data(self):
+        """Fetch current common data.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirInfoCommunPortrait
+        """
+        self._logger.info("Fetching common data")
+        await self._client.select_customer(self.account_id, self.customer_id)
+        headers = {"Content-Type": "application/json"}
+        res = await self._client.http_request(COMMON_DATA_URL, "get", headers=headers)
+        text_res = await res.text()
+        # We can not use res.json() because the response header are not application/json
+        json_res = json.loads(text_res)
+        if not json_res.get('results'):
+            return
+
+        self._current_common_data = {
+                'tarif_code': json_res['results']['codeTarif'],
+                'adress_line_1': json_res['results']['adresseLieuConsoPartie1'],
+                'adress_line_2': json_res['results']['adresseLieuConsoPartie2'],
+                'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'],
+                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'],
+                }
+
+    @property
+    def current_common_data(self):
+        """Return collected current common data."""
+        return self._current_common_data
