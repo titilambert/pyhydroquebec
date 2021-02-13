@@ -7,7 +7,7 @@ This module defines the different output functions:
 """
 import json
 
-from pyhydroquebec.consts import (OVERVIEW_TPL,
+from pyhydroquebec.consts import (OVERVIEW_TPL, COMMON_TPL,
                                   CONSUMPTION_PROFILE_TPL,
                                   YESTERDAY_TPL, ANNUAL_TPL, HOURLY_HEADER, HOURLY_TPL)
 
@@ -15,6 +15,7 @@ from pyhydroquebec.consts import (OVERVIEW_TPL,
 def output_text(customer, show_hourly=False):
     """Format data to get a readable output."""
     print(OVERVIEW_TPL.format(customer))
+    print(COMMON_TPL.format(d=customer.current_common_data))
     if customer.current_period['period_total_bill']:
         print(CONSUMPTION_PROFILE_TPL.format(d=customer.current_period))
     if customer.current_annual_data:
@@ -76,6 +77,7 @@ def output_json(customer, show_hourly=False):
         "customer_id": customer.customer_id,
         "balance": customer.balance
     }
+    out["common_data"] = customer.current_common_data
     if customer.current_period['period_total_bill']:
         out["current_period"] = customer.current_period
     if customer.current_annual_data:
