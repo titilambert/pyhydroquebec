@@ -44,6 +44,7 @@ fi
 if [ "$PYHQ_OUTPUT" == "MQTT" ]
 then
     echo '0  2  *  *  *    /usr/local/bin/mqtt_pyhydroquebec' > /etc/crontabs/root
+    mqtt_pyhydroquebec
     crond -l 2 -f
 else
     pyhydroquebec -u $PYHQ_USER -p $PYHQ_PASSWORD $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
