@@ -320,8 +320,8 @@ class Customer():
                 'tarif_code': json_res['results']['codeTarif'],
                 #'adress_line_1': json_res['results']['adresseLieuConsoPartie1'],
                 #'adress_line_2': json_res['results']['adresseLieuConsoPartie2'],
-                'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'],
-                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'],
+                'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '),
+                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '), 
                 }
 
     @property
