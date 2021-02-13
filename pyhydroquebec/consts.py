@@ -140,14 +140,15 @@ Contract: {0.contract_id}
 Balance: {0.balance:.2f} $
 """)
 
+# Add those 2 lines to COMMON_TPL if you need them and also uncomment them in customer.py
+#Adress Line 1: {d[adress_line_1]}
+#Adress Line 2: {d[adress_line_2]}
+
 COMMON_TPL = ("""
 Hydro Quebec common data
 ========================
 
 Tarif Code: {d[tarif_code]}
-
-Adress Line 1: {d[adress_line_1]}
-Adress Line 2: {d[adress_line_2]}
 
 Today Message: {d[today_message]}
 Tomorrow Message: {d[tomorrow_message]}
