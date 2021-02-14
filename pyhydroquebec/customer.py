@@ -1,6 +1,7 @@
 """PyHydroQuebec Client Module."""
 from datetime import datetime, timedelta
 import json
+import re
 
 from bs4 import BeautifulSoup
 import cachetools
@@ -316,12 +317,66 @@ class Customer():
         if not json_res.get('results'):
             return
 
+        today_list = re.findall(r"\b\d+\b",json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '))
+        today_dict = {}
+        
+        if len(today_list) >= 4:
+            today_dict = {
+              "today_start_1": today_list[1],
+              "today_end_1": today_list[2],
+              "today_start_2": today_list[3],
+              "today_end_2": today_list[4],
+            }
+        elif len(today_list) >= 2:
+            if int(today_list[1]) >= 12:
+                today_dict = {
+                  "today_start_1": "",
+                  "today_end_1": "",
+                  "today_start_2": today_list[1],
+                  "today_end_2": today_list[2],
+                }
+            else:
+                today_dict = {
+                  "today_start_1": today_list[1],
+                  "today_end_1": today_list[2],
+                  "today_start_2": "",
+                  "today_end_2": "",
+                }
+
+        tomorrow_list = re.findall(r"\b\d+\b",json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '))
+        tomorrow_dict = {}
+
+        if len(tomorrow_list) >= 4:
+            tomorrow_dict = {
+              "tomorrow_start_1": tomorrow_list[1],
+              "tomorrow_end_1": tomorrow_list[2],
+              "tomorrow_start_2": tomorrow_list[3],
+              "tomorrow_end_2": tomorrow_list[4],
+            }
+        elif len(tomorrow_list) >= 2:
+            if int(tomorrow_list[1]) >= 12:
+                tomorrow_dict = {
+                  "tomorrow_start_1": "",
+                  "tomorrow_end_1": "",
+                  "tomorrow_start_2": tomorrow_list[1],
+                  "tomorrow_end_2": tomorrow_list[2],
+                }
+            else:
+                tomorrow_dict = {
+                  "tomorrow_start_1": tomorrow_list[1],
+                  "tomorrow_end_1": tomorrow_list[2],
+                  "tomorrow_start_2": "",
+                  "tomorrow_end_2": "",
+                }
+
         self._current_common_data = {
                 'tarif_code': json_res['results']['codeTarif'],
                 #'adress_line_1': json_res['results']['adresseLieuConsoPartie1'],
                 #'adress_line_2': json_res['results']['adresseLieuConsoPartie2'],
                 'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '),
-                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '), 
+                'today_times': json.dumps(today_dict),
+                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '),
+                'tomorrow_times': json.dumps(tomorrow_dict),
                 }
 
     @property
