@@ -317,23 +317,29 @@ class Customer():
         if not json_res.get('results'):
             return
 
-        today_list = re.findall(r"\b\d+\b",json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '))
+        add_hours = 0
+        today_message = json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' ')
+
+        if today_message.find("p.m.") != -1 :
+            add_hours = 12
+
+        today_list = re.findall(r"\b\d+\b",today_message)
         today_dict = {}
-        
+
         if len(today_list) >= 4:
             today_dict = {
-              "today_start_1": today_list[1],
+              "today_start_1": int(today_list[1]),
               "today_end_1": today_list[2],
-              "today_start_2": today_list[3],
-              "today_end_2": today_list[4],
+              "today_start_2": str(int(today_list[3]) + add_hours),
+              "today_end_2": str(int(today_list[4]) + add_hours),
             }
         elif len(today_list) >= 2:
-            if int(today_list[1]) >= 12:
+            if int(today_list[1]) + add_hours >= 12:
                 today_dict = {
                   "today_start_1": "",
                   "today_end_1": "",
-                  "today_start_2": today_list[1],
-                  "today_end_2": today_list[2],
+                  "today_start_2": str(int(today_list[1]) + add_hours),
+                  "today_end_2": str(int(today_list[2]) + add_hours),
                 }
             else:
                 today_dict = {
@@ -343,23 +349,29 @@ class Customer():
                   "today_end_2": "",
                 }
 
-        tomorrow_list = re.findall(r"\b\d+\b",json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '))
+        add_hours = 0
+        tomorrow_message = json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' ')
+
+        if tomorrow_message.find("p.m.") != -1 :
+            add_hours = 12
+
+        tomorrow_list = re.findall(r"\b\d+\b",tomorrow_message)
         tomorrow_dict = {}
 
         if len(tomorrow_list) >= 4:
             tomorrow_dict = {
-              "tomorrow_start_1": tomorrow_list[1],
+              "tomorrow_start_1": int(tomorrow_list[1]),
               "tomorrow_end_1": tomorrow_list[2],
-              "tomorrow_start_2": tomorrow_list[3],
-              "tomorrow_end_2": tomorrow_list[4],
+              "tomorrow_start_2": str(int(tomorrow_list[3]) + add_hours),
+              "tomorrow_end_2": str(int(tomorrow_list[4]) + add_hours),
             }
         elif len(tomorrow_list) >= 2:
-            if int(tomorrow_list[1]) >= 12:
+            if int(tomorrow_list[1]) + add_hours >= 12:
                 tomorrow_dict = {
                   "tomorrow_start_1": "",
                   "tomorrow_end_1": "",
-                  "tomorrow_start_2": tomorrow_list[1],
-                  "tomorrow_end_2": tomorrow_list[2],
+                  "tomorrow_start_2": str(int(tomorrow_list[1]) + add_hours),
+                  "tomorrow_end_2": str(int(tomorrow_list[2]) + add_hours),
                 }
             else:
                 tomorrow_dict = {
@@ -375,7 +387,7 @@ class Customer():
                 #'adress_line_2': json_res['results']['adresseLieuConsoPartie2'],
                 'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '),
                 'today_times': json.dumps(today_dict),
-                'tomorrow_message': json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' '),
+                'tomorrow_message': tomorrow_message,
                 'tomorrow_times': json.dumps(tomorrow_dict),
                 }
 
