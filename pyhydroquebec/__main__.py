@@ -161,7 +161,7 @@ def main():
     elif args.dump_data:
         pprint(results[0].__dict__)
     elif args.influxdb:
-        output_influx(results[0])
+        output_influx(results[0], args.hourly)
     elif args.json or args.detailled_energy:
         output_json(results[0], args.hourly)
     else:

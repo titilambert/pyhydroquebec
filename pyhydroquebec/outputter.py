@@ -36,7 +36,7 @@ def output_influx(customer, show_hourly=False):
         #"batch_size" : 100,
     }
     db = InfluxDB(_params)
-    db.write_data_to_db(customer)
+    db.write_data_to_db(customer, show_hourly=show_hourly)
     print("Sent this to InfluxDB")
     output_text(customer, show_hourly=show_hourly)
 
