@@ -96,7 +96,6 @@ class InfluxDB:
         data.update(customer.current_daily_data[yesterday_date])
 
         # yesterday
-        # (id, value, units, tag)
         _points = []
         for k, v in CURRENT_MAP.items():
             _id = "{}|{}".format(id_prefix, k)
@@ -114,7 +113,7 @@ class InfluxDB:
             _points.append(_point)
 
         # annual
-        _id = "{}|{}".format(id_prefix, 'annual_kwh_price_cent')
+        _id = "{}|{}".format(id_prefix, 'annual_stats')
         _point = (
             Point(_id)
             .field("annual_kwh_price_cent", customer.current_annual_data['annual_kwh_price_cent'])
