@@ -21,7 +21,7 @@ async def fetch_data(client, contract_id, fetch_hourly=False):
         if customer.contract_id != contract_id and contract_id is not None:
             continue
         if contract_id is None:
-            client.logger.warn("Contract id not specified, using first available.")
+            client.logger.warning("Contract id not specified, using first available.")
 
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
@@ -155,9 +155,9 @@ def main():
     # Output data
     if args.list_contracts:
         for customer in results[0]:
-            print("Contract: {contract_id}\n\t"
-                  "Account: {account_id}\n\t"
-                  "Customer: {customer_id}".format(**customer))
+            print(f"""Contract: {customer['contract_id']}
+                  Account: {customer['account_id']}
+                  Customer: {customer['customer_id']}""")
     elif args.dump_data:
         pprint(results[0].__dict__)
     elif args.influxdb:

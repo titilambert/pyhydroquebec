@@ -15,36 +15,38 @@ HOST_SESSION = "https://session.hydroquebec.com"
 HOST_SERVICES = "https://cl-services.idp.hydroquebec.com"
 HOST_SPRING = "https://cl-ec-spring.hydroquebec.com"
 
-LOGIN_URL_1 = "{}/hqam/XUI/".format(HOST_LOGIN)
-LOGIN_URL_2 = "{}/hqam/json/serverinfo/*".format(HOST_LOGIN)
-LOGIN_URL_3 = "{}/hqam/json/realms/root/realms/clients/authenticate".format(HOST_LOGIN)
-LOGIN_URL_4 = "{}/config/security.json".format(HOST_SESSION)
-LOGIN_URL_5 = "{}/hqam/oauth2/authorize".format(HOST_LOGIN)
-LOGIN_URL_6 = "{}/cl/prive/api/v3_0/conversion/codeAcces".format(HOST_SERVICES)
-LOGIN_URL_7 = "{}/cl/prive/api/v1_0/relations".format(HOST_SERVICES)
+LOGIN_URL_1 = f"{HOST_LOGIN}/hqam/XUI/"
+LOGIN_URL_2 = f"{HOST_LOGIN}/hqam/json/serverinfo/*"
+LOGIN_URL_3 = f"{HOST_LOGIN}/hqam/json/realms/root/realms/clients/authenticate"
+LOGIN_URL_4 = f"{HOST_SESSION}/config/security.json"
+LOGIN_URL_5 = f"{HOST_LOGIN}/hqam/oauth2/authorize"
+LOGIN_URL_6 = f"{HOST_SERVICES}/cl/prive/api/v3_0/conversion/codeAcces"
+LOGIN_URL_7 = f"{HOST_SERVICES}/cl/prive/api/v1_0/relations"
 
-CONTRACT_URL_1 = "{}/cl/prive/api/v3_0/partenaires/infoBase".format(HOST_SERVICES)
-CONTRACT_URL_2 = "{}/portail/prive/maj-session/".format(HOST_SPRING)
-CONTRACT_URL_3 = "{}/portail/fr/group/clientele/gerer-mon-compte/".format(HOST_SPRING)
+CONTRACT_URL_1 = f"{HOST_SERVICES}/cl/prive/api/v3_0/partenaires/infoBase"
+CONTRACT_URL_2 = f"{HOST_SPRING}/portail/prive/maj-session/"
+CONTRACT_URL_3 = f"{HOST_SPRING}/portail/fr/group/clientele/gerer-mon-compte/"
 
-CONTRACT_CURRENT_URL_1 = ("{}/portail/fr/group/clientele/"
-                          "portrait-de-consommation".format(HOST_SPRING))
-CONTRACT_CURRENT_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                          "resourceObtenirDonneesPeriodesConsommation".format(HOST_SPRING))
+CONTRACT_CURRENT_URL_1 = (f"{HOST_SPRING}/portail/fr/group/clientele/"
+                          "portrait-de-consommation")
+CONTRACT_CURRENT_URL_2 = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                          "resourceObtenirDonneesPeriodesConsommation")
+CONTRACT_CURRENT_URL_3 = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                          "actionAfficherPremierePage")
 
-ANNUAL_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                   "resourceObtenirDonneesConsommationAnnuelles".format(HOST_SPRING))
+ANNUAL_DATA_URL = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                   "resourceObtenirDonneesConsommationAnnuelles")
 
-MONTHLY_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                    "resourceObtenirDonneesConsommationMensuelles".format(HOST_SPRING))
+MONTHLY_DATA_URL = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                    "resourceObtenirDonneesConsommationMensuelles")
 
-DAILY_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                  "resourceObtenirDonneesQuotidiennesConsommation".format(HOST_SPRING))
+DAILY_DATA_URL = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                  "resourceObtenirDonneesQuotidiennesConsommation")
 
-HOURLY_DATA_URL_1 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                     "resourceObtenirDonneesConsommationHoraires".format(HOST_SPRING))
-HOURLY_DATA_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
-                     "resourceObtenirDonneesMeteoHoraires".format(HOST_SPRING))
+HOURLY_DATA_URL_1 = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                     "resourceObtenirDonneesConsommationHoraires")
+HOURLY_DATA_URL_2 = (f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
+                     "resourceObtenirDonneesMeteoHoraires")
 
 CURRENT_MAP = {'period_total_bill': {'raw_name': 'montantFacturePeriode',
                                      'unit': '$',
@@ -184,11 +186,11 @@ ANNUAL_TPL = ("""
 Annual Total
 ============
 
-Start date:             {d[annual_date_start]}
-End date:               {d[annual_date_end]}
-Total bill:             {d[annual_total_bill]} $
-Mean daily bill:        {d[annual_mean_daily_bill]} $
-Total consumption:      {d[annual_total_consumption]} kWh
-Mean dailyconsumption:  {d[annual_mean_daily_consumption]} kWh
-kWh price:              {d[annual_kwh_price_cent]} ¢
+Start date:                 {d[annual_date_start]}
+End date:                   {d[annual_date_end]}
+Total bill:                 {d[annual_total_bill]} $
+Mean daily bill:            {d[annual_mean_daily_bill]} $
+Total consumption:          {d[annual_total_consumption]} kWh
+Mean daily consumption:     {d[annual_mean_daily_consumption]} kWh
+kWh price:                  {d[annual_kwh_price_cent]} ¢
 """)

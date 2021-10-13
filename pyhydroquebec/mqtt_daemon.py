@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime, timedelta
 import json
 import os
-import uuid
+from uuid import getnode as get_mac
 
 from yaml import load
 try:
@@ -18,13 +18,6 @@ import mqtt_hass_base
 from pyhydroquebec.__version__ import VERSION
 from pyhydroquebec.client import HydroQuebecClient
 from pyhydroquebec.consts import DAILY_MAP, CURRENT_MAP, HQ_TIMEZONE
-
-
-def get_mac():
-    """Get mac address."""
-    mac_addr = (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff)
-                for ele in range(0, 8 * 6, 8)][::-1]))
-    return mac_addr
 
 
 class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
@@ -39,7 +32,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
 
     def read_config(self):
         """Read config from yaml file."""
-        with open(os.environ['CONFIG']) as fhc:
+        with open(os.environ['CONFIG'], encoding='UTF-8') as fhc:
             self.config = load(fhc, Loader=Loader)
         self.timeout = self.config.get('timeout', 30)
         # 6 hours
@@ -53,21 +46,20 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         """Publish a Home-Assistant MQTT sensor."""
         mac_addr = get_mac()
 
-        base_topic = ("{}/sensor/hydroquebec_{}".format(self.mqtt_root_topic,
-                                                        contract_id))
+        base_topic = f"{self.mqtt_root_topic}/sensor/hydroquebec_{contract_id}"
 
         sensor_config = {}
         sensor_config["device"] = {"connections": [["mac", mac_addr]],
-                                   "name": "hydroquebec_{}".format(contract_id),
+                                   "name": f"hydroquebec_{contract_id}",
                                    "identifiers": ['hydroquebec', contract_id],
                                    "manufacturer": "mqtt-hydroquebec",
                                    "sw_version": VERSION}
 
-        sensor_state_config = "{}/{}/state".format(base_topic, sensor_type)
+        sensor_state_config = f"{base_topic}/{sensor_type}/state"
         sensor_config.update({
             "state_topic": sensor_state_config,
-            "name": "hydroquebec_{}_{}".format(contract_id, sensor_type),
-            "unique_id": "{}_{}".format(contract_id, sensor_type),
+            "name": f"hydroquebec_{contract_id}_{sensor_type}",
+            "unique_id": f"{contract_id}_{sensor_type}",
             "force_update": True,
             "expire_after": 0,
             })
@@ -79,7 +71,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         if icon:
             sensor_config["icon"] = icon
 
-        sensor_config_topic = "{}/{}/config".format(base_topic, sensor_type)
+        sensor_config_topic = f"{base_topic}/{sensor_type}/config"
 
         self.mqtt_client.publish(topic=sensor_config_topic,
                                  retain=True,

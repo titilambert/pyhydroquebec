@@ -19,8 +19,8 @@ from pyhydroquebec.consts import (REQUESTS_TIMEOUT, CONTRACT_URL_1, CONTRACT_URL
 def _get_logger(log_level):
     """Build logger."""
     if log_level.upper() not in LOGGING_LEVELS:
-        raise PyHydroQuebecError("Bad logging level. "
-                                 "Should be in {}".format(", ".join(LOGGING_LEVELS)))
+        raise PyHydroQuebecError(f"""Bad logging level.
+                                 Should be in {*LOGGING_LEVELS,}""")
     logging_level = getattr(logging, log_level.upper())
     logger = logging.getLogger(name='pyhydroquebec')
     logger.setLevel(logging_level)
@@ -79,7 +79,7 @@ class HydroQuebecClient():
         if raw_res.status != status:
             self.logger.exception("Exception in http_request")
             self.logger.debug(raw_res)
-            raise PyHydroQuebecHTTPError("Error Fetching {}".format(url))
+            raise PyHydroQuebecHTTPError(f"Error Fetching {url}")
 
         for cookie, cookie_content in raw_res.cookies.items():
             if hasattr(cookie_content, 'value'):
@@ -103,7 +103,7 @@ class HydroQuebecClient():
 
         customers = [c for c in self._customers if c.customer_id == customer_id]
         if not customers:
-            raise PyHydroQuebecError("Customer ID {} not found.".format(customer_id))
+            raise PyHydroQuebecError(f"Customer ID {customer_id} not found.")
 
         headers = {
             "Content-Type": "application/json",

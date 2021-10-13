@@ -1,6 +1,7 @@
 """PyHydroQuebec Client Module."""
 from datetime import datetime, timedelta
 import json
+import time
 
 from bs4 import BeautifulSoup
 import cachetools
@@ -10,8 +11,13 @@ from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
-                                  ANNUAL_MAP, CURRENT_MAP,
+                                  ANNUAL_MAP, CURRENT_MAP, CONTRACT_CURRENT_URL_3,
                                   )
+
+
+def current_milli_time():
+    """Get current epoch in ms."""
+    return round(time.time() * 1000)
 
 
 class Customer():
@@ -40,7 +46,7 @@ class Customer():
         self._compare_daily_data = {}
         self._hourly_data = {}
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_summary(self):
         """Fetch data from overview page.
 
@@ -57,25 +63,30 @@ class Customer():
             self._balance = float(raw_balance[:-2].replace(",", ".").
                                   replace("\xa0", ""))
 
-            raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-            self.contract_id = (raw_contract_id
-                                .split("Contrat", 1)[-1]
-                                .replace("\t", "")
-                                .replace("\n", ""))
+        except AttributeError:
+            self._logger.info("Customer has no balance")
+
+        res = await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        content = await res.text()
+        soup = BeautifulSoup(content, 'html.parser')
+        try:
+            raw_contract_id = soup.find('a', {'class': 'big iconLink'}).get('href')
+            self.contract_id = raw_contract_id.split("=", 1)[1]
 
         except AttributeError:
             self._logger.info("Customer has no contract")
 
         # Needs to load the consumption profile page to not break
         # the next loading of the other pages
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        await self._client.http_request(f"{CONTRACT_CURRENT_URL_3}?idContrat="
+                                        f"{self.contract_id}", "get")
 
     @property
     def balance(self):
         """Return the collected balance."""
         return self._balance
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_current_period(self):
         """Fetch data of the current period.
 
@@ -84,10 +95,12 @@ class Customer():
         self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
 
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        await self._client.http_request(f"{CONTRACT_CURRENT_URL_3}?idContrat="
+                                        f"{self.contract_id}", "get")
 
         headers = {"Content-Type": "application/json"}
-        res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
+        res = await self._client.http_request(f"{CONTRACT_CURRENT_URL_2}?_={current_milli_time()}",
+                                              "get", headers=headers)
         text_res = await res.text()
         # We can not use res.json() because the response header are not application/json
         json_res = json.loads(text_res)['results'][0]
@@ -101,7 +114,7 @@ class Customer():
         """Return collected current period data."""
         return self._current_period
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_annual_data(self):
         """Fetch data of the current and last year.
 
@@ -134,7 +147,7 @@ class Customer():
         """Return collected previous year data."""
         return self._compare_annual_data
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_monthly_data(self):
         """Fetch data of the current and last year.
 
@@ -172,7 +185,7 @@ class Customer():
         """Return collected monthly data of the previous year."""
         return self._compare_monthly_data
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_daily_data(self, start_date=None, end_date=None):
         """Fetch data of the current and last year.
 
@@ -241,7 +254,7 @@ class Customer():
         """Return collected daily data of the previous year."""
         return self._compare_daily_data
 
-    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60 * REQUESTS_TTL))
     async def fetch_hourly_data(self, day=None):
         """Fetch data of the current and last year.
 
@@ -273,11 +286,11 @@ class Customer():
         json_res = json.loads(await res.text())
 
         self._hourly_data[day_str] = {
-                'day_mean_temp': json_res['results'][0]['tempMoyJour'],
-                'day_min_temp': json_res['results'][0]['tempMinJour'],
-                'day_max_temp': json_res['results'][0]['tempMaxJour'],
-                'hours': {},
-                }
+            'day_mean_temp': json_res['results'][0]['tempMoyJour'],
+            'day_min_temp': json_res['results'][0]['tempMinJour'],
+            'day_max_temp': json_res['results'][0]['tempMaxJour'],
+            'hours': {},
+        }
         tmp_hour_dict = dict((h, {}) for h in range(24))
         for hour, temp in enumerate(json_res['results'][0]['listeTemperaturesHeure']):
             tmp_hour_dict[hour]['average_temperature'] = temp
