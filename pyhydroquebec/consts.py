@@ -147,7 +147,7 @@ Period mean temperate:  {d[period_average_temperature]:.1f} °C
 Period current bill
 ===================
 Total Bill:             {d[period_total_bill]:.2f} $
-Projection bill:        {d[period_projection]:.2f} $
+Projection bill:        {d[period_projection]} $
 Mean Daily Bill:        {d[period_mean_daily_bill]:.2f} $
 
 Total period consumption
