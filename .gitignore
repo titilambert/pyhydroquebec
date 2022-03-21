@@ -11,3 +11,4 @@ htmlcov/
 .coverage*
 .idea/
 .DS_Store
+.dccache
