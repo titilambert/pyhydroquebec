@@ -10,3 +10,4 @@ upload:
 
 docker:
 	docker build -t 192.168.2.98:5000/pyhydroquebec:heehoo .
+	docker push 192.168.2.98:5000/pyhydroquebec:heehoo

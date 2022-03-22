@@ -100,9 +100,7 @@ def test_json_output(capsys):
             "period_total_bill": "foobar_total_bill",
             "current_period_data": "current_period_data",
         },
-        "current_annual_data": {
-            "some_annual_data_key": "foobar_annual_data_value"
-        },
+        "current_annual_data": {"some_annual_data_key": "foobar_annual_data_value"},
         "yesterday_data": {
             "date": "some_date",
             "hour1": {"foobar": "some_data"},
@@ -123,9 +121,7 @@ def test_json_output(capsys):
             "period_total_bill": "foobar_total_bill",
             "current_period_data": "current_period_data",
         }
-        current_annual_data = {
-            "some_annual_data_key": "foobar_annual_data_value"
-        }
+        current_annual_data = {"some_annual_data_key": "foobar_annual_data_value"}
         current_daily_data = {"some_date": {"hour1": {"foobar": "some_data"}}}
 
     mock_customer = MockCustomer()

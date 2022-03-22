@@ -27,9 +27,7 @@ CONTRACT_URL_1 = f"{HOST_SERVICES}/cl/prive/api/v3_0/partenaires/infoBase"
 CONTRACT_URL_2 = f"{HOST_SPRING}/portail/prive/maj-session/"
 CONTRACT_URL_3 = f"{HOST_SPRING}/portail/fr/group/clientele/gerer-mon-compte/"
 
-CONTRACT_CURRENT_URL_1 = (
-    f"{HOST_SPRING}/portail/fr/group/clientele/" "portrait-de-consommation"
-)
+CONTRACT_CURRENT_URL_1 = f"{HOST_SPRING}/portail/fr/group/clientele/" "portrait-de-consommation"
 CONTRACT_CURRENT_URL_2 = (
     f"{HOST_SPRING}/portail/fr/group/clientele/portrait-de-consommation/"
     "resourceObtenirDonneesPeriodesConsommation"

@@ -21,9 +21,7 @@ async def fetch_data(client, contract_id, fetch_hourly=False):
         if customer.contract_id != contract_id and contract_id is not None:
             continue
         if contract_id is None:
-            client.logger.warning(
-                "Contract id not specified, using first available."
-            )
+            client.logger.warning("Contract id not specified, using first available.")
 
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
@@ -72,9 +70,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", help="Hydro Quebec username")
     parser.add_argument("-p", "--password", help="Password")
-    parser.add_argument(
-        "-j", "--json", action="store_true", default=False, help="Json output"
-    )
+    parser.add_argument("-j", "--json", action="store_true", default=False, help="Json output")
     parser.add_argument(
         "-i",
         "--influxdb",
@@ -82,9 +78,7 @@ def main():
         default=False,
         help="InfluxDb output",
     )
-    parser.add_argument(
-        "-c", "--contract", default=None, help="Contract number"
-    )
+    parser.add_argument("-c", "--contract", default=None, help="Contract number")
     parser.add_argument(
         "-l",
         "--list-contracts",
@@ -106,9 +100,7 @@ def main():
         default=False,
         help="Show contract python object as dict",
     )
-    parser.add_argument(
-        "-t", "--timeout", default=REQUESTS_TIMEOUT, help="Request timeout"
-    )
+    parser.add_argument("-t", "--timeout", default=REQUESTS_TIMEOUT, help="Request timeout")
     parser.add_argument(
         "-L",
         "--log-level",
@@ -123,9 +115,7 @@ def main():
         default=False,
         help="Show version",
     )
-    raw_group = parser.add_argument_group(
-        "Detailled-energy raw download option"
-    )
+    raw_group = parser.add_argument_group("Detailled-energy raw download option")
     raw_group.add_argument(
         "--detailled-energy",
         action="store_true",
@@ -134,9 +124,7 @@ def main():
     )
     raw_group.add_argument(
         "--start-date",
-        default=(datetime.now(HQ_TIMEZONE) - timedelta(days=1)).strftime(
-            "%Y-%m-%d"
-        ),
+        default=(datetime.now(HQ_TIMEZONE) - timedelta(days=1)).strftime("%Y-%m-%d"),
         help="Start date for detailled-output",
     )
     raw_group.add_argument(
@@ -174,9 +162,7 @@ def main():
         )
         return 3
 
-    client = HydroQuebecClient(
-        hydro_user, hydro_pass, args.timeout, log_level=args.log_level
-    )
+    client = HydroQuebecClient(hydro_user, hydro_pass, args.timeout, log_level=args.log_level)
     loop = asyncio.get_event_loop()
 
     # Get the async_func
@@ -189,9 +175,7 @@ def main():
     else:
         start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
         end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
-        async_func = fetch_data_detailled_energy_use(
-            client, start_date, end_date
-        )
+        async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
 
     # Fetch data
     try:

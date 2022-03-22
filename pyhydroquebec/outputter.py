@@ -30,9 +30,7 @@ def output_text(customer, show_hourly=False):
     print(YESTERDAY_TPL.format(d=data))
     if show_hourly:
         print(HOURLY_HEADER)
-        for hour, data in customer.hourly_data[yesterday_date][
-            "hours"
-        ].items():
+        for hour, data in customer.hourly_data[yesterday_date]["hours"].items():
             print(HOURLY_TPL.format(d=data, hour=hour))
 
 
@@ -95,9 +93,7 @@ def output_json(customer, show_hourly=False):
     out["yesterday_data"] = yesterday_data
     if show_hourly:
         out["hourly_data"] = []
-        for hour, data in customer.hourly_data[yesterday_date][
-            "hours"
-        ].items():
+        for hour, data in customer.hourly_data[yesterday_date]["hours"].items():
             hourly_object = {"hour": hour}
             hourly_object.update(data)
             out["hourly_data"].append(hourly_object)

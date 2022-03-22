@@ -110,15 +110,11 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 # Get contract
                 customer = None
                 for client_customer in client.customers:
-                    if str(client_customer.contract_id) == str(
-                        contract_data["id"]
-                    ):
+                    if str(client_customer.contract_id) == str(contract_data["id"]):
                         customer = client_customer
 
                 if customer is None:
-                    self.logger.warning(
-                        "Contract %s not found", contract_data["id"]
-                    )
+                    self.logger.warning("Contract %s not found", contract_data["id"])
                     continue
 
                 await customer.fetch_current_period()
@@ -130,9 +126,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 if not customer.current_daily_data:
                     yesterday = yesterday - timedelta(days=1)
                     yesterday_str = yesterday.strftime("%Y-%m-%d")
-                    await customer.fetch_daily_data(
-                        yesterday_str, yesterday_str
-                    )
+                    await customer.fetch_daily_data(yesterday_str, yesterday_str)
 
                 # Balance
                 # Publish sensor
@@ -144,9 +138,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                     icon="mdi:currency-usd",
                 )
                 # Send sensor data
-                self.mqtt_client.publish(
-                    topic=balance_topic, payload=customer.balance
-                )
+                self.mqtt_client.publish(topic=balance_topic, payload=customer.balance)
 
                 # Current period
                 for data_name, data in CURRENT_MAP.items():
@@ -179,9 +171,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                     # Send sensor data
                     self.mqtt_client.publish(
                         topic=sensor_topic,
-                        payload=customer.current_daily_data[yesterday_str][
-                            data_name
-                        ],
+                        payload=customer.current_daily_data[yesterday_str][data_name],
                     )
 
             await client.close_session()
@@ -191,9 +181,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
             self.must_run = False
             return
 
-        self.logger.info(
-            "Waiting for %d seconds before the next check", self.frequency
-        )
+        self.logger.info("Waiting for %d seconds before the next check", self.frequency)
         i = 0
         while i < self.frequency and self.must_run:
             await asyncio.sleep(1)
