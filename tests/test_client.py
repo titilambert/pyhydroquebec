@@ -8,8 +8,8 @@ from pyhydroquebec.client import HydroQuebecClient
 def test_client():
     """Test influx output function."""
 
-    username = os.environ['USERNAME']
-    password = os.environ['PASSWORD']
+    username = os.environ["USERNAME"]
+    password = os.environ["PASSWORD"]
     client = HydroQuebecClient(username, password, 30)
 
     loop = asyncio.get_event_loop()

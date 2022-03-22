@@ -21,7 +21,9 @@ async def fetch_data(client, contract_id, fetch_hourly=False):
         if customer.contract_id != contract_id and contract_id is not None:
             continue
         if contract_id is None:
-            client.logger.warning("Contract id not specified, using first available.")
+            client.logger.warning(
+                "Contract id not specified, using first available."
+            )
 
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
@@ -49,10 +51,14 @@ async def dump_data(client, contract_id):
 async def list_contracts(client):
     """Return the list of the contracts for a given account."""
     await client.login()
-    return [{"account_id": c.account_id,
-             "customer_id": c.customer_id,
-             "contract_id": c.contract_id}
-            for c in client.customers]
+    return [
+        {
+            "account_id": c.account_id,
+            "customer_id": c.customer_id,
+            "contract_id": c.contract_id,
+        }
+        for c in client.customers
+    ]
 
 
 async def fetch_data_detailled_energy_use(client, start_date, end_date):
@@ -64,39 +70,80 @@ async def fetch_data_detailled_energy_use(client, start_date, end_date):
 def main():
     """Entrypoint function."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--username',
-                        help='Hydro Quebec username')
-    parser.add_argument('-p', '--password',
-                        help='Password')
-    parser.add_argument('-j', '--json', action='store_true',
-                        default=False, help='Json output')
-    parser.add_argument('-i', '--influxdb', action='store_true',
-                        default=False, help='InfluxDb output')
-    parser.add_argument('-c', '--contract',
-                        default=None, help='Contract number')
-    parser.add_argument('-l', '--list-contracts', action='store_true',
-                        default=False, help='List all your contracts')
-    parser.add_argument('-H', '--hourly', action='store_true',
-                        default=False, help='Show yesterday hourly consumption')
-    parser.add_argument('-D', '--dump-data', action='store_true',
-                        default=False, help='Show contract python object as dict')
-    parser.add_argument('-t', '--timeout',
-                        default=REQUESTS_TIMEOUT, help='Request timeout')
-    parser.add_argument('-L', '--log-level',
-                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                        default='WARNING', help='Log level')
-    parser.add_argument('-V', '--version', action='store_true',
-                        default=False, help='Show version')
-    raw_group = parser.add_argument_group('Detailled-energy raw download option')
-    raw_group.add_argument('--detailled-energy', action='store_true',
-                           default=False, help='Get raw json output download')
-    raw_group.add_argument('--start-date',
-                           default=(datetime.now(HQ_TIMEZONE) -
-                                    timedelta(days=1)).strftime("%Y-%m-%d"),
-                           help='Start date for detailled-output')
-    raw_group.add_argument('--end-date',
-                           default=datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
-                           help="End date for detailled-output")
+    parser.add_argument("-u", "--username", help="Hydro Quebec username")
+    parser.add_argument("-p", "--password", help="Password")
+    parser.add_argument(
+        "-j", "--json", action="store_true", default=False, help="Json output"
+    )
+    parser.add_argument(
+        "-i",
+        "--influxdb",
+        action="store_true",
+        default=False,
+        help="InfluxDb output",
+    )
+    parser.add_argument(
+        "-c", "--contract", default=None, help="Contract number"
+    )
+    parser.add_argument(
+        "-l",
+        "--list-contracts",
+        action="store_true",
+        default=False,
+        help="List all your contracts",
+    )
+    parser.add_argument(
+        "-H",
+        "--hourly",
+        action="store_true",
+        default=False,
+        help="Show yesterday hourly consumption",
+    )
+    parser.add_argument(
+        "-D",
+        "--dump-data",
+        action="store_true",
+        default=False,
+        help="Show contract python object as dict",
+    )
+    parser.add_argument(
+        "-t", "--timeout", default=REQUESTS_TIMEOUT, help="Request timeout"
+    )
+    parser.add_argument(
+        "-L",
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="WARNING",
+        help="Log level",
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="store_true",
+        default=False,
+        help="Show version",
+    )
+    raw_group = parser.add_argument_group(
+        "Detailled-energy raw download option"
+    )
+    raw_group.add_argument(
+        "--detailled-energy",
+        action="store_true",
+        default=False,
+        help="Get raw json output download",
+    )
+    raw_group.add_argument(
+        "--start-date",
+        default=(datetime.now(HQ_TIMEZONE) - timedelta(days=1)).strftime(
+            "%Y-%m-%d"
+        ),
+        help="Start date for detailled-output",
+    )
+    raw_group.add_argument(
+        "--end-date",
+        default=datetime.now(HQ_TIMEZONE).strftime("%Y-%m-%d"),
+        help="End date for detailled-output",
+    )
 
     args = parser.parse_args()
 
@@ -121,12 +168,15 @@ def main():
 
     if not hydro_user or not hydro_pass:
         parser.print_usage()
-        print("pyhydroquebec: error: the following arguments are required: "
-              "-u/--username, -p/--password")
+        print(
+            "pyhydroquebec: error: the following arguments are required: "
+            "-u/--username, -p/--password"
+        )
         return 3
 
-    client = HydroQuebecClient(hydro_user, hydro_pass,
-                               args.timeout, log_level=args.log_level)
+    client = HydroQuebecClient(
+        hydro_user, hydro_pass, args.timeout, log_level=args.log_level
+    )
     loop = asyncio.get_event_loop()
 
     # Get the async_func
@@ -137,9 +187,11 @@ def main():
     elif args.detailled_energy is False:
         async_func = fetch_data(client, hydro_contract, args.hourly)
     else:
-        start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-        async_func = fetch_data_detailled_energy_use(client, start_date, end_date)
+        start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
+        end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+        async_func = fetch_data_detailled_energy_use(
+            client, start_date, end_date
+        )
 
     # Fetch data
     try:
@@ -155,9 +207,11 @@ def main():
     # Output data
     if args.list_contracts:
         for customer in results[0]:
-            print(f"""Contract: {customer['contract_id']}
+            print(
+                f"""Contract: {customer['contract_id']}
                   Account: {customer['account_id']}
-                  Customer: {customer['customer_id']}""")
+                  Customer: {customer['customer_id']}"""
+            )
     elif args.dump_data:
         pprint(results[0].__dict__)
     elif args.influxdb:
@@ -175,5 +229,5 @@ def mqtt_daemon():
     asyncio.run(dev.async_run())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
