@@ -9,7 +9,7 @@ upload:
 
 
 docker-mqtt:
-	docker build -f docker/mqtt/Dockerfile -t pyhydroquebec:mqtt-3.0 .
+	docker build -t pyhydroquebec:mqtt-heehoo .
 
 docker-cli:
-	docker build -f docker/cli/Dockerfile -t pyhydroquebec:3.0 .
+	docker build -t pyhydroquebec:heehoo .

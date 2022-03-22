@@ -3,8 +3,8 @@ import sys
 from setuptools import setup
 from pyhydroquebec.__version__ import VERSION
 
-if sys.version_info < (3,4):
-    sys.exit('Sorry, Python < 3.4 is not supported')
+if sys.version_info < (3,8):
+    sys.exit('Sorry, Python < 3.8 is not supported')
 
 requirements = open('requirements.txt')
 install_requires = list(val.strip() for val in requirements)
@@ -33,9 +33,7 @@ setup(name='pyhydroquebec',
       install_requires=install_requires,
       tests_require=tests_require,
       classifiers=[
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.9'
       ]
 
-)
+      )
