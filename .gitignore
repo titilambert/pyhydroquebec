@@ -12,3 +12,4 @@ htmlcov/
 .idea/
 .DS_Store
 .dccache
+.env

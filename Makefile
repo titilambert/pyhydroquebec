@@ -8,8 +8,6 @@ upload:
 	env/bin/python setup.py sdist upload -r pypi
 
 
-docker-mqtt:
-	docker build -t pyhydroquebec:mqtt-heehoo .
+docker:
+	docker build -t 192.168.2.98:5000/pyhydroquebec:heehoo .
 
-docker-cli:
-	docker build -t pyhydroquebec:heehoo .

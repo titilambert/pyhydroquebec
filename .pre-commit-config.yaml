@@ -1,0 +1,39 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      # Ensure no Unicode funniness
+      - id: check-byte-order-marker
+      # Valid Python syntax
+      - id: check-ast
+      # Proper formatting of YAML files
+      - id: check-yaml
+      # Proper formatting of JSON files
+      - id: check-json
+      # End of line whitespace
+      - id: trailing-whitespace
+        exclude: (^(.idea|.*/exploration/.*|setup.cfg))
+      # Single blank line at end of Python files
+      - id: end-of-file-fixer
+        exclude: (^(.idea|\.ipynb$|.*/exploration/.*|setup.cfg))
+      # Check for HEAD tags for merge conflicts
+      - id: check-merge-conflict
+      # Restrict adding large files to repo
+      - id: check-added-large-files
+        args: ["--maxkb=800"]
+      # Protect repo structure
+      - id: forbid-new-submodules
+      # Protect repo branches
+      - id: no-commit-to-branch
+        args:
+          - --branch
+          - develop
+          - --branch
+          - main
+  - repo: https://github.com/psf/black
+    rev: 21.12b0
+    hooks:
+    -   id: black
+        args:
+            - --config=.black.ini
+            - --quiet
