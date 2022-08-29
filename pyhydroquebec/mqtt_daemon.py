@@ -100,8 +100,9 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 # Get contract
                 customer = None
                 for client_customer in client.customers:
-                    if str(client_customer.contract_id) == str(contract_data['id']):
+                    if str(contract_data['id']) in client_customer.contract_list:
                         customer = client_customer
+                        customer.selected_contract = str(contract_data['id'])
 
                 if customer is None:
                     self.logger.warning('Contract %s not found', contract_data['id'])
@@ -132,7 +133,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 for data_name, data in CURRENT_MAP.items():
                     # Publish sensor
                     sensor_topic = self._publish_sensor(data_name,
-                                                        customer.contract_id,
+                                                        customer.selected_contract,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
                                                         device_class=data['device_class'])
@@ -145,7 +146,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 for data_name, data in DAILY_MAP.items():
                     # Publish sensor
                     sensor_topic = self._publish_sensor('yesterday_' + data_name,
-                                                        customer.contract_id,
+                                                        customer.selected_contract,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
                                                         device_class=data['device_class'])

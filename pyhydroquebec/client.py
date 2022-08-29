@@ -241,7 +241,7 @@ class HydroQuebecClient():
             customer = Customer(self, account_id, customer_id, self._timeout, customer_logger)
             self._customers.append(customer)
             await customer.fetch_summary()
-            if customer.contract_id is None:
+            if not customer.contract_list:
                 del self._customers[-1]
 
     @property

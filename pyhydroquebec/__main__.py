@@ -14,14 +14,17 @@ from pyhydroquebec.mqtt_daemon import MqttHydroQuebec
 from pyhydroquebec.__version__ import VERSION
 
 
-async def fetch_data(client, contract_id, fetch_hourly=False):
+async def fetch_data(client, contract_id=None, fetch_hourly=False):
     """Fetch data for basic report."""
     await client.login()
     for customer in client.customers:
-        if customer.contract_id != contract_id and contract_id is not None:
+        if contract_id is None and customer.contract_list:
+            client.logger.warning("Contract id not specified, using first available: " + customer.selected_contract)
+        elif contract_id not in customer.contract_list:
             continue
-        if contract_id is None:
-            client.logger.warn("Contract id not specified, using first available.")
+        else:
+            customer.selected_contract = contract_id
+        
 
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
@@ -36,13 +39,16 @@ async def fetch_data(client, contract_id, fetch_hourly=False):
         if fetch_hourly:
             await customer.fetch_hourly_data(yesterday_str)
         return customer
-
+    
+    client.logger.error("Could not fetch data, check contract id.")
+    return None
 
 async def dump_data(client, contract_id):
     """Fetch all data and dump them for debug and dev."""
     customer = await fetch_data(client, contract_id)
-    await customer.fetch_daily_data()
-    await customer.fetch_hourly_data()
+    if customer is not None:
+        await customer.fetch_daily_data()
+        await customer.fetch_hourly_data()
     return customer
 
 
@@ -51,7 +57,7 @@ async def list_contracts(client):
     await client.login()
     return [{"account_id": c.account_id,
              "customer_id": c.customer_id,
-             "contract_id": c.contract_id}
+             "contract_list": c.contract_list}
             for c in client.customers]
 
 
@@ -152,12 +158,16 @@ def main():
         loop.run_until_complete(close_fut)
         loop.close()
 
+    if results[0] is None:
+        return 1
+
     # Output data
     if args.list_contracts:
         for customer in results[0]:
-            print("Contract: {contract_id}\n\t"
-                  "Account: {account_id}\n\t"
-                  "Customer: {customer_id}".format(**customer))
+            print(f"Customer: {customer['customer_id']}\n\t"
+                  f"Account: {customer['account_id']}\n\t"
+                  f"Contract list: {', '.join(customer['contract_list'])}")
+
     elif args.dump_data:
         pprint(results[0].__dict__)
     elif args.influxdb:

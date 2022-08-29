@@ -17,7 +17,7 @@ def test_client():
     async_func = client.login()
     loop.run_until_complete(asyncio.gather(async_func))
     assert len(client.customers) > 0
-    assert client.customers[0].contract_id is not None
+    assert client.customers[0].selected_contract is not None
     assert client.customers[0].account_id is not None
 
 
