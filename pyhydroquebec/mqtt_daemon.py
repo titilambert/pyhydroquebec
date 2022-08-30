@@ -49,7 +49,7 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
         """Init before starting main loop."""
 
     def _publish_sensor(self, sensor_type, contract_id,
-                        unit=None, device_class=None, icon=None):
+                        unit=None, device_class=None, icon=None, state_class=None):
         """Publish a Home-Assistant MQTT sensor."""
         mac_addr = get_mac()
 
@@ -74,6 +74,8 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
 
         if device_class:
             sensor_config["device_class"] = device_class
+        if state_class:
+            sensor_config["state_class"] = state_class
         if unit:
             sensor_config["unit_of_measurement"] = unit
         if icon:
@@ -121,11 +123,12 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                 # Balance
                 # Publish sensor
                 balance_topic = self._publish_sensor('balance', customer.account_id,
-                                                     unit="$", device_class=None,
+                                                     unit="CAD", device_class='monetary',
                                                      icon="mdi:currency-usd")
                 # Send sensor data
                 self.mqtt_client.publish(
                         topic=balance_topic,
+                        retain=True,
                         payload=customer.balance)
 
                 # Current period
@@ -135,10 +138,12 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                                                         customer.contract_id,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
-                                                        device_class=data['device_class'])
+                                                        device_class=data['device_class'],
+                                                        state_class=data['state_class'])
                     # Send sensor data
                     self.mqtt_client.publish(
                             topic=sensor_topic,
+                            retain=True,
                             payload=customer.current_period[data_name])
 
                 # Yesterday data
@@ -148,10 +153,12 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                                                         customer.contract_id,
                                                         unit=data['unit'],
                                                         icon=data['icon'],
-                                                        device_class=data['device_class'])
+                                                        device_class=data['device_class'],
+                                                        state_class=data['state_class'])
                     # Send sensor data
                     self.mqtt_client.publish(
                             topic=sensor_topic,
+                            retain=True,
                             payload=customer.current_daily_data[yesterday_str][data_name])
 
             await client.close_session()
