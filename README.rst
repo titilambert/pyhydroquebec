@@ -2,6 +2,7 @@
 PyHydroQuebec
 #############
 
+**DEPRECATED** - please used https://gitlab.com/hydroqc/hydroqc
 
 TODO
 ####
