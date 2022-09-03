@@ -19,7 +19,7 @@ class Customer():
 
     The account_id is called 'noPartenaireDemandeur' in the HydroQuebec API
     The customer_id is called 'Customer number' in the HydroQuebec 'My accounts' UI
-    The contract_id is called 'Contract' in the HydroQuebec 'At a glance' UI
+    The contract_list is called 'Contract' in the HydroQuebec 'At a glance' UI, several contracts might be listed
     """
 
     def __init__(self, client, account_id, customer_id, timeout, logger):
@@ -27,7 +27,8 @@ class Customer():
         self._client = client
         self.account_id = account_id
         self.customer_id = customer_id
-        self.contract_id = None
+        self._contract_list = []
+        self._selected_contract = None
         self._timeout = timeout
         self._logger = logger.getChild(customer_id)
         self._balance = None
@@ -57,19 +58,41 @@ class Customer():
             self._balance = float(raw_balance[:-2].replace(",", ".").
                                   replace("\xa0", ""))
 
-            raw_contract_id = soup.find('div', {'class': 'contrat'}).text
-            self.contract_id = (raw_contract_id
-                                .split("Contrat", 1)[-1]
-                                .replace("\t", "")
-                                .replace("\n", ""))
-
+            raw_contract_list = soup.find_all('div', {'class': 'contrat'}, limit=None)
+            for raw_contract_id in raw_contract_list:
+                self._contract_list.append(raw_contract_id.text
+                                    .split("Contrat", 1)[-1]
+                                    .replace("\t", "")
+                                    .replace("\n", ""))
+            if not self._contract_list:
+                self._logger.info("Customer has no contract")
+            else:
+                self._selected_contract = self._contract_list[0] # Select first contract by default
         except AttributeError:
-            self._logger.info("Customer has no contract")
+            self._logger.info("Error : a parsing error occured")
 
         # Needs to load the consumption profile page to not break
         # the next loading of the other pages
         await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
 
+    @property
+    def contract_list(self):
+        """Return the list of available contracts."""
+        return self._contract_list
+
+    @property
+    def selected_contract(self):
+        """Return the selected contract."""
+        return self._selected_contract
+
+    @selected_contract.setter
+    def selected_contract(self, contract_id):
+        """Select a specific contract."""
+        if contract_id not in self._contract_list:
+            raise ValueError(f"Contract {contract_id} not available. Possible contract are {', '.join(self._contract_list)}")
+        self._selected_contract = contract_id
+        self._logger.info("Contract %s selected", contract_id)
+    
     @property
     def balance(self):
         """Return the collected balance."""
@@ -83,8 +106,9 @@ class Customer():
         """
         self._logger.info("Fetching current period data")
         await self._client.select_customer(self.account_id, self.customer_id)
-
-        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get")
+        
+        params = {"noContrat": self._selected_contract}
+        await self._client.http_request(CONTRACT_CURRENT_URL_1, "get", params=params)
 
         headers = {"Content-Type": "application/json"}
         res = await self._client.http_request(CONTRACT_CURRENT_URL_2, "get", headers=headers)
@@ -111,7 +135,8 @@ class Customer():
         self._logger.info("Fetching annual data")
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
-        res = await self._client.http_request(ANNUAL_DATA_URL, "get", headers=headers)
+        params = {"noContrat": self._selected_contract}
+        res = await self._client.http_request(ANNUAL_DATA_URL, "get", params=params, headers=headers)
         # We can not use res.json() because the response header are not application/json
         json_res = json.loads(await res.text())
         if not json_res.get('results'):
@@ -144,7 +169,8 @@ class Customer():
         self._logger.info("Fetching monthly data")
         await self._client.select_customer(self.account_id, self.customer_id)
         headers = {"Content-Type": "application/json"}
-        res = await self._client.http_request(MONTHLY_DATA_URL, "get", headers=headers)
+        params = {"noContrat": self._selected_contract}
+        res = await self._client.http_request(MONTHLY_DATA_URL, "get", params=params, headers=headers)
         text_res = await res.text()
         # We can not use res.json() because the response header are not application/json
         json_res = json.loads(text_res)
@@ -209,7 +235,10 @@ class Customer():
             end_date_str = end_date
 
         headers = {"Content-Type": "application/json"}
-        params = {"dateDebut": start_date_str}
+        params = {
+            "idContrat": self._selected_contract,
+            "dateDebut": start_date_str
+        }
         if end_date_str:
             params.update({"dateFin": end_date_str})
         res = await self._client.http_request(DAILY_DATA_URL, "get",
@@ -266,7 +295,11 @@ class Customer():
                 return
             day_str = day
 
-        params = {"dateDebut": day_str, "dateFin": day_str}
+        params = {
+            "idContrat": self._selected_contract,
+            "dateDebut": day_str, 
+            "dateFin": day_str
+        }
         res = await self._client.http_request(HOURLY_DATA_URL_2, "get",
                                               params=params, )
         # We can not use res.json() because the response header are not application/json

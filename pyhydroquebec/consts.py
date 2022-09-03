@@ -126,12 +126,12 @@ ANNUAL_MAP = (('annual_mean_daily_consumption', 'moyenneKwhJourAnnee'),
 OVERVIEW_TPL = ("""
 ##################################
 # Hydro Quebec data for contract #
-# {0.contract_id}
+# {0.selected_contract}
 ##################################
 
 Account ID: {0.account_id}
 Customer number: {0.customer_id}
-Contract: {0.contract_id}
+Contract: {0.selected_contract}
 ===================
 
 Balance: {0.balance:.2f} $
