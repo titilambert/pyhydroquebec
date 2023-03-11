@@ -1,0 +1,10 @@
+{
+    "cSpell.words": [
+        "mqtt",
+        "pyhydroquebec"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.envFile": "${workspaceFolder}/.env",
+    "github.gitAuthentication": false
+}

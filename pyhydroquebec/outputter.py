@@ -7,20 +7,25 @@ This module defines the different output functions:
 """
 import json
 
-from pyhydroquebec.consts import (OVERVIEW_TPL,
-                                  CONSUMPTION_PROFILE_TPL,
-                                  YESTERDAY_TPL, ANNUAL_TPL, HOURLY_HEADER, HOURLY_TPL)
+from pyhydroquebec.consts import (
+    OVERVIEW_TPL,
+    CONSUMPTION_PROFILE_TPL,
+    YESTERDAY_TPL,
+    ANNUAL_TPL,
+    HOURLY_HEADER,
+    HOURLY_TPL,
+)
 
 
 def output_text(customer, show_hourly=False):
     """Format data to get a readable output."""
     print(OVERVIEW_TPL.format(customer))
-    if customer.current_period['period_total_bill']:
+    if customer.current_period["period_total_bill"]:
         print(CONSUMPTION_PROFILE_TPL.format(d=customer.current_period))
     if customer.current_annual_data:
         print(ANNUAL_TPL.format(d=customer.current_annual_data))
     yesterday_date = list(customer.current_daily_data.keys())[0]
-    data = {'date': yesterday_date}
+    data = {"date": yesterday_date}
     data.update(customer.current_daily_data[yesterday_date])
     print(YESTERDAY_TPL.format(d=data))
     if show_hourly:
@@ -32,6 +37,8 @@ def output_text(customer, show_hourly=False):
 def output_influx(contract):
     """Print data using influxDB format."""
     raise Exception("FIXME")
+
+
 #    # Pop yesterdays data
 #    yesterday_data = contract]['yesterday_hourly_consumption']
 #    del data[contract]['yesterday_hourly_consumption']
@@ -70,18 +77,18 @@ def output_influx(contract):
 def output_json(customer, show_hourly=False):
     """Print data as a json."""
     out = {}
-    out['overview'] = {
+    out["overview"] = {
         "contract_id": customer.contract_id,
         "account_id": customer.account_id,
         "customer_id": customer.customer_id,
-        "balance": customer.balance
+        "balance": customer.balance,
     }
-    if customer.current_period['period_total_bill']:
+    if customer.current_period["period_total_bill"]:
         out["current_period"] = customer.current_period
     if customer.current_annual_data:
         out["current_annual_data"] = customer.current_annual_data
     yesterday_date = list(customer.current_daily_data.keys())[0]
-    yesterday_data = {'date': yesterday_date}
+    yesterday_data = {"date": yesterday_date}
     yesterday_data.update(customer.current_daily_data[yesterday_date])
     out["yesterday_data"] = yesterday_data
     if show_hourly:
