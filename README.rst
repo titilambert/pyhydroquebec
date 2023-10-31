@@ -8,6 +8,7 @@ TODO
 ####
 
 * Add automated tests
+* Add detection for "planned service interruption"
 
 Installation
 ############
