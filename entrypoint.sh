@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-
+INSTALL="/home/appuser/.local"
 # Check user and password
 if [ -z "$PYHQ_USER" ] || [ -z "$PYHQ_PASSWORD" ]  && [ "$PYHQ_OUTPUT" != "MQTT" ]
 then
@@ -41,9 +41,9 @@ then
     export CONFIG="/etc/pyhydroquebec/pyhydroquebec.yaml"
 fi
 
-if [ "$PYHQ_OUTPUT" == "MQTT" ]
+if [ "$PYHQ_OUTPUT" = "MQTT" ]
 then
-    mqtt_pyhydroquebec
+    "$INSTALL"/bin/mqtt_pyhydroquebec
 else
-    pyhydroquebec -u $PYHQ_USER -p $PYHQ_PASSWORD $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
+    "$INSTALL"/bin/pyhydroquebec -u "$PYHQ_USER" -p "$PYHQ_PASSWORD" $PYHQ_CMD_OUTPUT $PYHQ_CMD_CONTRACT
 fi
