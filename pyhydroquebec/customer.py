@@ -1,6 +1,7 @@
 """PyHydroQuebec Client Module."""
 from datetime import datetime, timedelta
 import json
+import re
 
 from bs4 import BeautifulSoup
 import cachetools
@@ -9,6 +10,7 @@ from pyhydroquebec.consts import (ANNUAL_DATA_URL, CONTRACT_CURRENT_URL_1,
                                   CONTRACT_CURRENT_URL_2, CONTRACT_URL_3,
                                   DAILY_DATA_URL, HOURLY_DATA_URL_1,
                                   HOURLY_DATA_URL_2, MONTHLY_DATA_URL,
+                                  COMMON_DATA_URL,
                                   REQUESTS_TTL, DAILY_MAP, MONTHLY_MAP,
                                   ANNUAL_MAP, CURRENT_MAP,
                                   )
@@ -38,6 +40,7 @@ class Customer():
         self._compare_monthly_data = {}
         self._current_daily_data = {}
         self._compare_daily_data = {}
+        self._current_common_data = {}
         self._hourly_data = {}
 
     @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
@@ -296,3 +299,99 @@ class Customer():
     def hourly_data(self):
         """Return collected hourly data."""
         return self._hourly_data
+
+    @cachetools.cached(cachetools.TTLCache(maxsize=128, ttl=60*REQUESTS_TTL))
+    async def fetch_common_data(self):
+        """Fetch current common data.
+
+        API URL: https://cl-ec-spring.hydroquebec.com/portail/fr/group/clientele/
+        portrait-de-consommation/resourceObtenirInfoCommunPortrait
+        """
+        self._logger.info("Fetching common data")
+        await self._client.select_customer(self.account_id, self.customer_id)
+        headers = {"Content-Type": "application/json"}
+        res = await self._client.http_request(COMMON_DATA_URL, "get", headers=headers)
+        text_res = await res.text()
+        # We can not use res.json() because the response header are not application/json
+        json_res = json.loads(text_res)
+        if not json_res.get('results'):
+            return
+
+        add_hours = 0
+        today_message = json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' ')
+
+        if today_message.find("p.m.") != -1 :
+            add_hours = 12
+
+        today_list = re.findall(r"\b\d+\b",today_message)
+        today_dict = {}
+
+        if len(today_list) >= 4:
+            today_dict = {
+              "today_start_1": int(today_list[1]),
+              "today_end_1": today_list[2],
+              "today_start_2": str(int(today_list[3]) + add_hours),
+              "today_end_2": str(int(today_list[4]) + add_hours),
+            }
+        elif len(today_list) >= 2:
+            if int(today_list[1]) + add_hours >= 12:
+                today_dict = {
+                  "today_start_1": "",
+                  "today_end_1": "",
+                  "today_start_2": str(int(today_list[1]) + add_hours),
+                  "today_end_2": str(int(today_list[2]) + add_hours),
+                }
+            else:
+                today_dict = {
+                  "today_start_1": today_list[1],
+                  "today_end_1": today_list[2],
+                  "today_start_2": "",
+                  "today_end_2": "",
+                }
+
+        add_hours = 0
+        tomorrow_message = json_res['results']['zoneMessageHTMLAvisDemain'].replace('&nbsp;',' ')
+
+        if tomorrow_message.find("p.m.") != -1 :
+            add_hours = 12
+
+        tomorrow_list = re.findall(r"\b\d+\b",tomorrow_message)
+        tomorrow_dict = {}
+
+        if len(tomorrow_list) >= 4:
+            tomorrow_dict = {
+              "tomorrow_start_1": int(tomorrow_list[1]),
+              "tomorrow_end_1": tomorrow_list[2],
+              "tomorrow_start_2": str(int(tomorrow_list[3]) + add_hours),
+              "tomorrow_end_2": str(int(tomorrow_list[4]) + add_hours),
+            }
+        elif len(tomorrow_list) >= 2:
+            if int(tomorrow_list[1]) + add_hours >= 12:
+                tomorrow_dict = {
+                  "tomorrow_start_1": "",
+                  "tomorrow_end_1": "",
+                  "tomorrow_start_2": str(int(tomorrow_list[1]) + add_hours),
+                  "tomorrow_end_2": str(int(tomorrow_list[2]) + add_hours),
+                }
+            else:
+                tomorrow_dict = {
+                  "tomorrow_start_1": tomorrow_list[1],
+                  "tomorrow_end_1": tomorrow_list[2],
+                  "tomorrow_start_2": "",
+                  "tomorrow_end_2": "",
+                }
+
+        self._current_common_data = {
+                'tarif_code': json_res['results']['codeTarif'],
+                #'adress_line_1': json_res['results']['adresseLieuConsoPartie1'],
+                #'adress_line_2': json_res['results']['adresseLieuConsoPartie2'],
+                'today_message': json_res['results']['zoneMessageHTMLAvisAujourdhui'].replace('&nbsp;',' '),
+                'today_times': json.dumps(today_dict),
+                'tomorrow_message': tomorrow_message,
+                'tomorrow_times': json.dumps(tomorrow_dict),
+                }
+
+    @property
+    def current_common_data(self):
+        """Return collected current common data."""
+        return self._current_common_data

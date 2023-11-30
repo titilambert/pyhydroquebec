@@ -23,6 +23,7 @@ async def fetch_data(client, contract_id, fetch_hourly=False):
         if contract_id is None:
             client.logger.warn("Contract id not specified, using first available.")
 
+        await customer.fetch_common_data()
         await customer.fetch_current_period()
         await customer.fetch_annual_data()
         await customer.fetch_monthly_data()

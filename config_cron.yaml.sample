@@ -1,0 +1,10 @@
+# THIS YAML CAN CHANGE IN THE FUTURE
+timeout: 30
+# If frequency is not set the "daemon" will collect the data only one time and stop
+# 6 hours
+#frequency: 8640
+accounts:
+- username: USERNAME@EMAIL
+  password: PASSWORD
+  contracts:
+    - id: CONTRACT_ID

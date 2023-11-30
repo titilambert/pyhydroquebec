@@ -128,6 +128,19 @@ class MqttHydroQuebec(mqtt_hass_base.MqttDevice):
                         topic=balance_topic,
                         payload=customer.balance)
 
+                # Current Common Data
+                await customer.fetch_common_data()
+
+                for data_name, data in customer.current_common_data.items():
+                    # Publish sensor
+                    common_data_topic = self._publish_sensor(data_name,
+                                                             customer.contract_id,
+                                                             device_class=None)
+                    # Send sensor data
+                    self.mqtt_client.publish(
+                            topic=common_data_topic,
+                            payload=data)
+
                 # Current period
                 for data_name, data in CURRENT_MAP.items():
                     # Publish sensor

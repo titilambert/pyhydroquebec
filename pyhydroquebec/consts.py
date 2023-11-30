@@ -46,6 +46,9 @@ HOURLY_DATA_URL_1 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
 HOURLY_DATA_URL_2 = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
                      "resourceObtenirDonneesMeteoHoraires".format(HOST_SPRING))
 
+COMMON_DATA_URL = ("{}/portail/fr/group/clientele/portrait-de-consommation/"
+                   "resourceObtenirInfoCommunPortrait".format(HOST_SPRING))
+
 CURRENT_MAP = {'period_total_bill': {'raw_name': 'montantFacturePeriode',
                                      'unit': '$',
                                      'icon': 'mdi:currency-usd',
@@ -135,6 +138,20 @@ Contract: {0.contract_id}
 ===================
 
 Balance: {0.balance:.2f} $
+""")
+
+# Add those 2 lines to COMMON_TPL if you need them and also uncomment them in customer.py
+#Adress Line 1: {d[adress_line_1]}
+#Adress Line 2: {d[adress_line_2]}
+
+COMMON_TPL = ("""
+Hydro Quebec common data
+========================
+
+Tarif Code: {d[tarif_code]}
+
+Today Message: {d[today_message]}
+Tomorrow Message: {d[tomorrow_message]}
 """)
 
 CONSUMPTION_PROFILE_TPL = ("""
